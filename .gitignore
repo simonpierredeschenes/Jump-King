@@ -1,0 +1,32 @@
+AutofillStates/
+CertificateRevocation/
+ClientSidePhishing/
+Crowd Deny/
+Default/
+DesktopSharingHub/
+Dictionaries/
+FileTypePolicies/
+First Run
+FirstPartySetsPreloaded/
+GrShaderCache/
+Last Version
+Local State
+OnDeviceHeadSuggestModel/
+OptimizationHints/
+OriginTrials/
+PKIMetadata/
+SSLErrorAssistant/
+SafetyTips/
+ShaderCache/
+Subresource Filter/
+UrlParamClassifications/
+Variations
+WidevineCdm/
+ZxcvbnData/
+chrome_shutdown_ms.txt
+hyphen-data/
+persisted_first_party_sets.json
+pnacl/
+BrowserMetrics-spare.pma
+Safe Browsing/
+
