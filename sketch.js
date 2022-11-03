@@ -26,6 +26,7 @@ let placingPlayer = false;
 let placingCoins = false;
 let playerPlaced = false;
 
+let testingRLAgent = true;
 let testingSinglePlayer = true;
 
 
@@ -38,6 +39,7 @@ let snowImage = null;
 
 
 let population = null;
+let rlAgent = null;
 let levelDrawn = false;
 
 
@@ -79,11 +81,15 @@ function setup() {
     setupCanvas();
     player = new Player();
     population = new Population(600);
+    rlAgent = new RLAgent();
     setupLevels();
     jumpSound.playMode('sustain');
     fallSound.playMode('sustain');
     bumpSound.playMode('sustain');
     landSound.playMode('sustain');
+    if (testingRLAgent) {
+        setInterval(communicateWithAgent, 200);
+    }
 
     // lines.push(new Line(200,height - 80,width - 200, height-80));
     // lines.push(new Line(10,height - 500,200, height-500));
@@ -112,7 +118,6 @@ function drawMousePosition() {
 }
 
 let levelNumber = 0;
-
 function draw() {
     background(10);
 
@@ -134,7 +139,7 @@ function draw() {
     // }
     push()
     translate(0, 50);
-    if (testingSinglePlayer) {
+    if (testingSinglePlayer || testingRLAgent) {
         image(levels[player.currentLevelNo].levelImage, 0, 0)
         levels[player.currentLevelNo].show();
         player.Update();
@@ -187,7 +192,7 @@ function draw() {
     fill(0);
     noStroke();
     rect(0, 0, width, 50);
-    if(!testingSinglePlayer){
+    if(!testingRLAgent && !testingSinglePlayer){
         textSize(32);
         fill(255, 255, 255);
         text('FPS: ' + previousFrameRate, width - 160, 35);
@@ -232,30 +237,31 @@ function setupCanvas() {
 
 
 function keyPressed() {
-    switch (key) {
-        case ' ':
-            player.jumpHeld = true
-            break;
-        case 'R':
-            population.ResetAllPlayers()
-            break;
-        case 'S':
-            bumpSound.stop();
-            jumpSound.stop();
-            landSound.stop();
-            fallSound.stop();
-            break;
+    if(!testingRLAgent) {
+        switch (key) {
+            case ' ':
+                player.jumpHeld = true
+                break;
+            case 'R':
+                population.ResetAllPlayers()
+                break;
+            case 'S':
+                bumpSound.stop();
+                jumpSound.stop();
+                landSound.stop();
+                fallSound.stop();
+                break;
+        }
+    
+        switch (keyCode) {
+            case LEFT_ARROW:
+                player.leftHeld = true;
+                break;
+            case RIGHT_ARROW:
+                player.rightHeld = true;
+                break;
+        }
     }
-
-    switch (keyCode) {
-        case LEFT_ARROW:
-            player.leftHeld = true;
-            break;
-        case RIGHT_ARROW:
-            player.rightHeld = true;
-            break;
-    }
-
 }
 replayingBestPlayer = false;
 cloneOfBestPlayer = null;
@@ -263,70 +269,71 @@ cloneOfBestPlayer = null;
 
 
 function keyReleased() {
-
-    switch (key) {
-        case 'B':
-            replayingBestPlayer = true;
-            cloneOfBestPlayer = population.cloneOfBestPlayerFromPreviousGeneration.clone();
-            evolationSpeed = 1;
-            mutePlayers = false;
-            break;
-
-
-        case ' ':
-
-            if (!creatingLines) {
-                player.jumpHeld = false
-                player.Jump()
-            }
-            break;
-        case 'R':
-            if (creatingLines) {
-                lines = [];
-                linesString = "";
-                mousePos1 = null;
-                mousePos2 = null;
-            }
-            break;
-        case 'N':
-            if (creatingLines) {
-                levelNumber += 1;
-                linesString += '\nlevels.push(tempLevel);';
-                linesString += '\ntempLevel = new Level();';
-                print(linesString);
-                lines = [];
-                linesString = '';
-                mousePos1 = null;
-                mousePos2 = null;
-            } else {
-                player.currentLevelNo += 1;
-                print(player.currentLevelNo);
-            }
-            break;
-        case 'D':
-            if (creatingLines) {
-
-                mousePos1 = null;
-                mousePos2 = null;
-            }
-    }
-
-    switch (keyCode) {
-        case LEFT_ARROW:
-            player.leftHeld = false;
-            break;
-        case RIGHT_ARROW:
-            player.rightHeld = false;
-            break;
-        case DOWN_ARROW:
-            evolationSpeed = constrain(evolationSpeed - 1, 0, 50);
-            print(evolationSpeed)
-
-            break;
-        case UP_ARROW:
-            evolationSpeed = constrain(evolationSpeed + 1, 0, 50);
-            print(evolationSpeed)
-            break;
+    if(!testingRLAgent) {
+        switch (key) {
+            case 'B':
+                replayingBestPlayer = true;
+                cloneOfBestPlayer = population.cloneOfBestPlayerFromPreviousGeneration.clone();
+                evolationSpeed = 1;
+                mutePlayers = false;
+                break;
+    
+    
+            case ' ':
+    
+                if (!creatingLines) {
+                    player.jumpHeld = false
+                    player.Jump()
+                }
+                break;
+            case 'R':
+                if (creatingLines) {
+                    lines = [];
+                    linesString = "";
+                    mousePos1 = null;
+                    mousePos2 = null;
+                }
+                break;
+            case 'N':
+                if (creatingLines) {
+                    levelNumber += 1;
+                    linesString += '\nlevels.push(tempLevel);';
+                    linesString += '\ntempLevel = new Level();';
+                    print(linesString);
+                    lines = [];
+                    linesString = '';
+                    mousePos1 = null;
+                    mousePos2 = null;
+                } else {
+                    player.currentLevelNo += 1;
+                    print(player.currentLevelNo);
+                }
+                break;
+            case 'D':
+                if (creatingLines) {
+    
+                    mousePos1 = null;
+                    mousePos2 = null;
+                }
+        }
+    
+        switch (keyCode) {
+            case LEFT_ARROW:
+                player.leftHeld = false;
+                break;
+            case RIGHT_ARROW:
+                player.rightHeld = false;
+                break;
+            case DOWN_ARROW:
+                evolationSpeed = constrain(evolationSpeed - 1, 0, 50);
+                print(evolationSpeed)
+    
+                break;
+            case UP_ARROW:
+                evolationSpeed = constrain(evolationSpeed + 1, 0, 50);
+                print(evolationSpeed)
+                break;
+        }
     }
 }
 
@@ -337,29 +344,55 @@ let linesString = "";
 
 
 function mouseClicked() {
-    if (creatingLines) {
-        let snappedX = mouseX - mouseX % 20;
-        let snappedY = mouseY - mouseY % 20;
-        if (mousePos1 == null) {
-            mousePos1 = createVector(snappedX, snappedY);
-        } else {
-            mousePos2 = createVector(snappedX, snappedY);
-            // print('tempLevel.lines.push(new Line(' + mousePos1.x + ',' + mousePos1.y + ',' + mousePos2.x + ',' + mousePos2.y + '));');
-            lines.push(new Line(mousePos1.x, mousePos1.y, mousePos2.x, mousePos2.y));
-            linesString += '\ntempLevel.lines.push(new Line(' + mousePos1.x + ',' + mousePos1.y + ',' + mousePos2.x + ',' + mousePos2.y + '));';
-            mousePos1 = null;
-            mousePos2 = null;
+    if(!testingRLAgent) {
+        if (creatingLines) {
+            let snappedX = mouseX - mouseX % 20;
+            let snappedY = mouseY - mouseY % 20;
+            if (mousePos1 == null) {
+                mousePos1 = createVector(snappedX, snappedY);
+            } else {
+                mousePos2 = createVector(snappedX, snappedY);
+                // print('tempLevel.lines.push(new Line(' + mousePos1.x + ',' + mousePos1.y + ',' + mousePos2.x + ',' + mousePos2.y + '));');
+                lines.push(new Line(mousePos1.x, mousePos1.y, mousePos2.x, mousePos2.y));
+                linesString += '\ntempLevel.lines.push(new Line(' + mousePos1.x + ',' + mousePos1.y + ',' + mousePos2.x + ',' + mousePos2.y + '));';
+                mousePos1 = null;
+                mousePos2 = null;
+            }
+        } else if (placingPlayer && !playerPlaced) {
+            playerPlaced = true;
+            player.currentPos = createVector(mouseX, mouseY);
+    
+    
+        } else if (placingCoins) {
+    
+    
         }
-    } else if (placingPlayer && !playerPlaced) {
-        playerPlaced = true;
-        player.currentPos = createVector(mouseX, mouseY);
-
-
-    } else if (placingCoins) {
-
-
+        print("levels[" + player.currentLevelNo + "].coins.push(new Coin( " + floor(mouseX) + "," + floor(mouseY - 50) + ' , "progress" ));');
     }
-    print("levels[" + player.currentLevelNo + "].coins.push(new Coin( " + floor(mouseX) + "," + floor(mouseY - 50) + ' , "progress" ));');
+}
+
+let previousState = null;
+let previousAction = null;
+function communicateWithAgent()
+{
+    currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
+    if(previousState != null && previousAction != null) {
+	reward = currentState[0] - previousState[0];
+	rlAgent.addEntryToHistoric(previousState, previousAction, reward, currentState);
+    }
+
+    currentAction = rlAgent.chooseAction();
+    player.leftHeld = currentAction[0] == -1;
+    player.rightHeld = currentAction[0] == 1;
+    if (player.jumpHeld && !currentAction[1]) {
+        if (!creatingLines) {
+            player.Jump()
+        }
+    }
+    player.jumpHeld = currentAction[1];
+
+    previousState = currentState;
+    previousAction = currentAction;
 }
 
 //todo
