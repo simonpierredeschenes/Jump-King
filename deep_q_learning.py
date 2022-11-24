@@ -109,7 +109,7 @@ def format_batch(batch, target_network, gamma):
                       and targets are the one-step lookahead targets.
     '''
     
-    # TODO: implement
+    # TODO: Modifier pour que cela fonctionne avec le format de Jump King
     states = np.vstack([x[0] for x in batch])
     actions = np.array([x[1] for x in batch])
     rewards = np.array([x[2] for x in batch])
