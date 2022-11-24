@@ -39,7 +39,6 @@ let snowImage = null;
 
 
 let population = null;
-let rlAgent = null;
 let levelDrawn = false;
 
 
@@ -47,6 +46,13 @@ let startingPlayerActions = 5;
 let increaseActionsByAmount = 5;
 let increaseActionsEveryXGenerations = 10;
 let evolationSpeed = 1;
+
+let agentReady = false;
+const socket = new WebSocket("ws://localhost:65432");
+socket.addEventListener("open", () => {
+  agentReady = true;
+});
+socket.addEventListener("message", onReceive);
 
 
 function preload() {
@@ -81,14 +87,14 @@ function setup() {
     setupCanvas();
     player = new Player();
     population = new Population(600);
-    rlAgent = new RLAgent();
     setupLevels();
     jumpSound.playMode('sustain');
     fallSound.playMode('sustain');
     bumpSound.playMode('sustain');
     landSound.playMode('sustain');
     if (testingRLAgent) {
-        setInterval(communicateWithAgent, 200);
+        setInterval(addCurrentStateToHistoric, 200);
+        setInterval(executeCurrentAction, 10);
     }
 
     // lines.push(new Line(200,height - 80,width - 200, height-80));
@@ -371,28 +377,95 @@ function mouseClicked() {
     }
 }
 
-let previousState = null;
-let previousAction = null;
-function communicateWithAgent()
+function parseAction(data)
 {
-    currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
-    if(previousState != null && previousAction != null) {
-	reward = currentState[0] - previousState[0];
-	rlAgent.addEntryToHistoric(previousState, previousAction, reward, currentState);
-    }
+    let commaIndex = data.indexOf(",");
+    let direction = Number(data.substring(1, commaIndex));
+    let jump = (data.substring(commaIndex+1,data.length-1) === "true");
+    return [direction, jump];
+}
 
-    currentAction = rlAgent.chooseAction();
-    player.leftHeld = currentAction[0] == -1;
-    player.rightHeld = currentAction[0] == 1;
-    if (player.jumpHeld && !currentAction[1]) {
-        if (!creatingLines) {
-            player.Jump()
+let currentAction = null;
+let currentSequenceNumber = 0;
+function onReceive({data})
+{
+    currentAction = parseAction(data);
+    currentSequenceNumber = (currentSequenceNumber + 1) % 100;
+}
+
+function stateToString(state)
+{
+    let stateString = "[";
+    stateString += state[0].toString() + ",";
+    stateString += state[1].toString() + ",";
+    stateString += state[2].toString() + ",";
+    stateString += state[3].toString() + ",";
+    stateString += "[";
+    for(let i = 0; i < state[4].length; i++)
+    {
+        stateString += "[";
+        stateString += state[4][i].x1 + ",";
+        stateString += state[4][i].y1 + ",";
+        stateString += state[4][i].x2 + ",";
+        stateString += state[4][i].y2 + "]";
+        if(i < state[4].length - 1)
+        {
+            stateString += ",";
         }
     }
-    player.jumpHeld = currentAction[1];
+    stateString += "]]";
+    return stateString;
+}
 
-    previousState = currentState;
-    previousAction = currentAction;
+function actionToString(action)
+{
+    actionString = "[";
+    actionString += action[0].toString() + ",";
+    actionString += action[1].toString() + "]";
+    return actionString;
+}
+
+function historicEntryToString(previousState, previousAction, reward, currentState)
+{
+    let historicEntryString = "[";
+    historicEntryString += stateToString(previousState) + ",";
+    historicEntryString += actionToString(previousAction) + ",";
+    historicEntryString += reward.toString() + ",";
+    historicEntryString += stateToString(currentState) + "]";
+    return historicEntryString;
+}
+
+let previousState = null;
+function addCurrentStateToHistoric()
+{
+    if(agentReady)
+    {
+        currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
+        if(previousState != null) {
+            reward = currentState[0] - previousState[0];
+            socket.send(historicEntryToString(previousState, previousAction, reward, currentState));
+        }
+        previousState = currentState;
+    }
+}
+
+let sequenceNumberOfLastExecution = 0;
+let previousAction = [0, false];
+function executeCurrentAction()
+{
+    if(agentReady && sequenceNumberOfLastExecution != currentSequenceNumber && currentAction != null)
+    {
+        player.leftHeld = currentAction[0] == -1;
+        player.rightHeld = currentAction[0] == 1;
+        if (player.jumpHeld && !currentAction[1]) {
+            if (!creatingLines) {
+                player.Jump()
+            }
+        }
+        player.jumpHeld = currentAction[1];
+        previousAction = currentAction;
+        sequenceNumberOfLastExecution = currentSequenceNumber;
+    }
 }
 
 //todo
