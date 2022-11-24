@@ -94,7 +94,7 @@ function setup() {
     landSound.playMode('sustain');
     if (testingRLAgent) {
         setInterval(addCurrentStateToHistoric, 200);
-        setInterval(executeCurrentAction, 10);
+        setInterval(executeCurrentAction, 2.5);
     }
 
     // lines.push(new Line(200,height - 80,width - 200, height-80));
