@@ -76,12 +76,12 @@ class DQN(Model):
         self.set_weights(new_weights)
 
 
-class NNModel(torch.nn.Module,n_hidden_layers=3,hidden_dim=64):
+class NNModel(torch.nn.Module):
     '''
     Neural Network with 3 hidden layers of hidden dimension 64.
     '''
 
-    def __init__(self, in_dim, out_dim, n_hidden_layers=3, hidden_dim=64):
+    def __init__(self, in_dim, out_dim,n_hidden_layers=3,hidden_dim=64):
         super().__init__()
         layers = [torch.nn.Linear(in_dim, hidden_dim), torch.nn.ReLU()]
         for _ in range(n_hidden_layers - 1):
@@ -108,17 +108,49 @@ def format_batch(batch, target_network, gamma):
                       selected actions according to the target network
                       and targets are the one-step lookahead targets.
     '''
-    
+    # A state is a vector of size 5
+    #   The first element is the global height of the player in the game (0 is at the bottom)
+    #   The second element is the x position of the player in the screen (0 is at the left)
+    #   The third element is the y position of the player in the screen (0 is at the top)
+    #   The fourth element is true if the player is touching the ground, false otherwise
+    #   The fifth element is a vector containing all the solid edges in the screen under the form (x1, y1, x2, y2)
+    #
+    # An action is a vector of size 2
+    #   The first element is either -1 to move left, 0 for no lateral movement or 1 to move right
+    #   The second element is true to jump, false otherwise
+    #
+    # A historic entry is a vector of size 4
+    #   The first element is the previous state
+    #   The second element is the previous action
+    #   The third element is the reward received after the previous action
+    #   The fourth element is the next state
+
     # TODO: Modifier pour que cela fonctionne avec le format de Jump King
-    states = np.vstack([x[0] for x in batch])
+    state_height = np.vstack([x[0][0] for x in batch])
+    state_x=np.vstack([x[0][1] for x in batch])
+    state_y = np.vstack([x[0][2] for x in batch])
+    jumping = np.vstack([x[0][3] for x in batch])
+    edges=[]
+    i=0
+    for x in batch:
+        j = 0
+        edges.append(np.zeros(100))
+        for y in range(len(x[0][4])):
+            edges[i][j]=x[0][4][y][0]
+            edges[i][j+1] = x[0][4][y][1]
+            edges[i][j+2] = x[0][4][y][2]
+            edges[i][j+3] = x[0][4][y][3]
+            j+=4
+        i+=1
     actions = np.array([x[1] for x in batch])
     rewards = np.array([x[2] for x in batch])
-    next_states = np.vstack([x[3] for x in batch])
-    dones = np.array([x[4] for x in batch])
-    next_q_vals = target_network.predict_on_batch(next_states)
-    max_q_vals = np.max(next_q_vals, axis=-1)
-    targets = (rewards + gamma * max_q_vals * (1 - dones)).astype(np.float32)
-    return states, (actions, targets)
+    # next_states = np.vstack([x[3] for x in batch])
+    # dones = np.array([x[4] for x in batch])
+    # next_q_vals = target_network.predict_on_batch(next_states)
+    # max_q_vals = np.max(next_q_vals, axis=-1)
+    # targets = (rewards + gamma * max_q_vals * (1 - dones)).astype(np.float32)
+    # return state_height, (actions, targets)
+    return state_height,state_x,state_y,jumping
 
 
 def dqn_loss(y_pred, y_target):
