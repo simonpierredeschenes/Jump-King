@@ -29,4 +29,5 @@ persisted_first_party_sets.json
 pnacl/
 BrowserMetrics-spare.pma
 Safe Browsing/
+.idea/
 
