@@ -17,11 +17,28 @@
 #   The second element is the previous action
 #   The third element is the reward received after the previous action
 #   The fourth element is the next state
-
+import csv
+import deep_q_learning
+import torch
+from copy import deepcopy
 
 class Agent:
     def __init__(self):
         self.historic = []
+        #Dans le contexte des tests, je vais implémenter les paramètres directement en attribut de l'objet
+        #batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate
+        self.actions=[[-1,1],[0,1],[1,1],[-1,0],[0,0],[1,0]]
+        self.batchSize=100
+        self.gamma=0.99
+        self.bufferSize=10000
+        self.tau=1e-3
+        self.trainingInterval=20
+        self.learningRate=5e-4
+        self.model=deep_q_learning.NNModel(125,2,6,250)
+        self.source_network=deep_q_learning.DQN(self.actions,self.model,torch.optim.Adam(self.model.parameters(), lr=self.learningRate), loss_function=deep_q_learning.dqn_loss)
+        self.target_network=deepcopy(self.source_network)
+        self.replayBuffer=deep_q_learning.ReplayBuffer(self.bufferSize)
+
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         self.historic.append((previous_state, action, reward, next_state))
@@ -42,5 +59,15 @@ class Agent:
                 if self.historic[-1][1][1] != self.historic[len(self.historic)-1-i][1][1]:
                     jump = self.historic[-1][1][1]
                     break
+
+        if len(self.historic)%100==0:
+            A=deep_q_learning.format_batch(self.historic,self.target_network,self.gamma)
+
+            f = open('historique'+str(len(self.historic))+'.csv', 'w',newline='')
+            writer=csv.writer(f)
+            for row in range(len(A)):
+                writer.writerow(self.historic[row][:])
+        if len(self.historic)>=500:
+            pass
 
         return direction, jump

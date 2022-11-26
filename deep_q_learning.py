@@ -81,7 +81,7 @@ class NNModel(torch.nn.Module):
     Neural Network with 3 hidden layers of hidden dimension 64.
     '''
 
-    def __init__(self, in_dim, out_dim,n_hidden_layers=3,hidden_dim=64):
+    def __init__(self, in_dim, out_dim,n_hidden_layers=3,hidden_dim=128):
         super().__init__()
         layers = [torch.nn.Linear(in_dim, hidden_dim), torch.nn.ReLU()]
         for _ in range(n_hidden_layers - 1):
@@ -134,7 +134,7 @@ def format_batch(batch, target_network, gamma):
     i=0
     for x in batch:
         j = 0
-        edges.append(np.zeros(100))
+        edges.append(np.zeros(120))
         for y in range(len(x[0][4])):
             edges[i][j]=x[0][4][y][0]
             edges[i][j+1] = x[0][4][y][1]
@@ -144,13 +144,31 @@ def format_batch(batch, target_network, gamma):
         i+=1
     actions = np.array([x[1] for x in batch])
     rewards = np.array([x[2] for x in batch])
-    # next_states = np.vstack([x[3] for x in batch])
+    next_state_height = np.vstack([x[3][0] for x in batch])
+    next_state_x = np.vstack([x[3][1] for x in batch])
+    next_state_y = np.vstack([x[3][2] for x in batch])
+    next_jumping = np.vstack([x[3][3] for x in batch])
+    next_edges = []
+    i = 0
+    for x in batch:
+        j = 0
+        next_edges.append(np.zeros(120))
+        print(x[3][4])
+        for y in range(len(x[3][4])):
+            next_edges[i][j] = x[3][4][y][0]
+            next_edges[i][j + 1] = x[3][4][y][1]
+            next_edges[i][j + 2] = x[3][4][y][2]
+            next_edges[i][j + 3] = x[3][4][y][3]
+            j += 4
+        i += 1
+    states=(state_height,state_x,state_y,jumping,edges)
+    next_states=(next_state_height,next_state_x,next_state_y,next_jumping,next_edges)
     # dones = np.array([x[4] for x in batch])
-    # next_q_vals = target_network.predict_on_batch(next_states)
-    # max_q_vals = np.max(next_q_vals, axis=-1)
-    # targets = (rewards + gamma * max_q_vals * (1 - dones)).astype(np.float32)
+    next_q_vals = target_network.predict_on_batch(next_states)
+    max_q_vals = np.max(next_q_vals, axis=-1)
+    targets = rewards + gamma * max_q_vals
     # return state_height, (actions, targets)
-    return state_height,state_x,state_y,jumping
+    return states, (actions,targets),next_states
 
 
 def dqn_loss(y_pred, y_target):
@@ -236,18 +254,18 @@ def run(batch_size, gamma, buffer_size, seed, tau, training_interval, learning_r
         environment.close()
 
 
-if __name__ == "__main__":
-    '''
-    All hyperparameter values and overall code structure are only given as a baseline. 
-    
-    You can use them if they help  you, but feel free to implement from scratch the
-    required algorithms if you wish!
-    '''
-    batch_size = 64
-    gamma = 0.99
-    buffer_size = 1e5
-    seed = 42
-    tau = 1e-3
-    training_interval = 4
-    learning_rate = 5e-4
-    run(batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate)
+# if __name__ == "__main__":
+#     '''
+#     All hyperparameter values and overall code structure are only given as a baseline.
+#
+#     You can use them if they help  you, but feel free to implement from scratch the
+#     required algorithms if you wish!
+#     '''
+#     batch_size = 64
+#     gamma = 0.99
+#     buffer_size = 1e5
+#     seed = 42
+#     tau = 1e-3
+#     training_interval = 4
+#     learning_rate = 5e-4
+#     run(batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate)

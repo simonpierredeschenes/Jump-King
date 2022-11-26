@@ -1,0 +1,1 @@
+Start -ArgumentList  "-disable-web-security -user-data-dir=D:\Jump-King D:\Jump-King\index.html" Chrome
