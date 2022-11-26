@@ -161,8 +161,8 @@ def format_batch(batch, target_network, gamma):
             next_edges[i][j + 3] = x[3][4][y][3]
             j += 4
         i += 1
-    states=(state_height,state_x,state_y,jumping,edges)
-    next_states=(next_state_height,next_state_x,next_state_y,next_jumping,next_edges)
+    states=[state_height,state_x,state_y,jumping,edges]
+    next_states=torch.DoubleTensor(np.concatenate(next_state_height,next_state_x,next_state_y,next_jumping,next_edges))
     # dones = np.array([x[4] for x in batch])
     next_q_vals = target_network.predict_on_batch(next_states)
     max_q_vals = np.max(next_q_vals, axis=-1)
