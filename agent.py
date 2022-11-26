@@ -38,7 +38,9 @@ class Agent:
         self.source_network=deep_q_learning.DQN(self.actions,self.model,torch.optim.Adam(self.model.parameters(), lr=self.learningRate), loss_function=deep_q_learning.dqn_loss)
         self.target_network=deepcopy(self.source_network)
         self.replayBuffer=deep_q_learning.ReplayBuffer(self.bufferSize)
-
+        self.total_n_step=0
+        self.nbTrajectories=2000
+        self.G=0
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         self.historic.append((previous_state, action, reward, next_state))
@@ -67,7 +69,37 @@ class Agent:
             writer=csv.writer(f)
             for row in range(len(A)):
                 writer.writerow(self.historic[row][:])
-        if len(self.historic)>=500:
-            pass
 
         return direction, jump
+
+    def choose_action2(self):
+        next_state = self.historic[-1][3]
+        state=self.historic[-1][0]
+        action=self.historic[-1][1]
+        reward=self.historic[-1][2]
+        self.G += reward
+
+        self.replay_buffer.store((state, action, reward, next_state))
+        self.total_n_steps += 1
+
+        if self.replay_buffer.get_size() > self.batch_size and self.total_n_steps % self.trainingInterval == 0:
+            minibatch = self.replayBuffer.get_batch(self.batchSize)
+            formatted_minibatch = deep_q_learning.format_batch(minibatch, self.target_network, self.gamma)
+            last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
+            self.target_network.soft_update(self.source_network, self.tau)
+
+        state = next_state
+        with open("dql.csv", "w+") as file:
+            file.write("total_nb_steps,cumulative_reward,loss\n")
+
+            trajectory_done = False
+            G = 0
+            last_loss_episode = 0
+            #state, _ = environment.reset(seed=seed)
+            state = self.historic[-1][0]
+            if not trajectory_done:
+                action = self.source_network.get_action(state, self.epsilon)
+
+
+            self.epsilon = max(self.epsilon * 0.99, 0.05)
+            # condition d'arrêt pour trajectory_done
