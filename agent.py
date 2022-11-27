@@ -27,14 +27,14 @@ class Agent:
         self.historic = []
         #Dans le contexte des tests, je vais implémenter les paramètres directement en attribut de l'objet
         #batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate
-        self.actions=[[-1,1],[0,1],[1,1],[-1,0],[0,0],[1,0]]
+        self.actions=[[-1,1],[0,1],[1,1],[-1,0],[0,0],[1,0],]
         self.batchSize=100
         self.gamma=0.99
         self.bufferSize=10000
         self.tau=1e-3
         self.trainingInterval=20
         self.learningRate=5e-4
-        self.model=deep_q_learning.NNModel(125,2,6,250)
+        self.model=deep_q_learning.NNModel(124,2,6,1240)
         self.source_network=deep_q_learning.DQN(self.actions,self.model,torch.optim.Adam(self.model.parameters(), lr=self.learningRate), loss_function=deep_q_learning.dqn_loss)
         self.target_network=deepcopy(self.source_network)
         self.replayBuffer=deep_q_learning.ReplayBuffer(self.bufferSize)
@@ -62,7 +62,7 @@ class Agent:
                     jump = self.historic[-1][1][1]
                     break
 
-        if len(self.historic)%100==0:
+        if len(self.historic)%50==0:
             A=deep_q_learning.format_batch(self.historic,self.target_network,self.gamma)
 
             f = open('historique'+str(len(self.historic))+'.csv', 'w',newline='')

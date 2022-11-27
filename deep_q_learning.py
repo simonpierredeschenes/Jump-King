@@ -83,6 +83,7 @@ class NNModel(torch.nn.Module):
 
     def __init__(self, in_dim, out_dim,n_hidden_layers=3,hidden_dim=128):
         super().__init__()
+
         layers = [torch.nn.Linear(in_dim, hidden_dim), torch.nn.ReLU()]
         for _ in range(n_hidden_layers - 1):
             layers.extend([torch.nn.Linear(hidden_dim, hidden_dim), torch.nn.ReLU()])
@@ -127,9 +128,13 @@ def format_batch(batch, target_network, gamma):
 
     # TODO: Modifier pour que cela fonctionne avec le format de Jump King
     state_height = np.vstack([x[0][0] for x in batch])
+    #state_height=torch.float32(state_height)
     state_x=np.vstack([x[0][1] for x in batch])
+    #state_height=torch.float32(state_height)
     state_y = np.vstack([x[0][2] for x in batch])
+    #state_y=torch.float32(state_y)
     jumping = np.vstack([x[0][3] for x in batch])
+    #jumping=torch.float32(jumping)
     edges=[]
     i=0
     for x in batch:
@@ -142,18 +147,22 @@ def format_batch(batch, target_network, gamma):
             edges[i][j+3] = x[0][4][y][3]
             j+=4
         i+=1
+    edges = np.vstack(edges)
     actions = np.array([x[1] for x in batch])
     rewards = np.array([x[2] for x in batch])
     next_state_height = np.vstack([x[3][0] for x in batch])
+    #next_state_height=torch.float32(next_state_height)
     next_state_x = np.vstack([x[3][1] for x in batch])
+   # next_state_x=torch.float32(next_state_x)
     next_state_y = np.vstack([x[3][2] for x in batch])
+    #next_state_y=torch.float32(next_state_y)
     next_jumping = np.vstack([x[3][3] for x in batch])
+    #next_jumping=torch.float32(next_jumping)
     next_edges = []
     i = 0
     for x in batch:
         j = 0
         next_edges.append(np.zeros(120))
-        print(x[3][4])
         for y in range(len(x[3][4])):
             next_edges[i][j] = x[3][4][y][0]
             next_edges[i][j + 1] = x[3][4][y][1]
@@ -161,8 +170,10 @@ def format_batch(batch, target_network, gamma):
             next_edges[i][j + 3] = x[3][4][y][3]
             j += 4
         i += 1
-    states=[state_height,state_x,state_y,jumping,edges]
-    next_states=torch.DoubleTensor(np.concatenate(next_state_height,next_state_x,next_state_y,next_jumping,next_edges))
+    next_edges=np.vstack(next_edges)
+    states=torch.FloatTensor(np.concatenate((state_height,state_x,state_y,jumping,edges),axis=1))
+    print(states)
+    next_states=torch.FloatTensor(np.concatenate((next_state_height,next_state_x,next_state_y,next_jumping,next_edges),axis=1))
     # dones = np.array([x[4] for x in batch])
     next_q_vals = target_network.predict_on_batch(next_states)
     max_q_vals = np.max(next_q_vals, axis=-1)
