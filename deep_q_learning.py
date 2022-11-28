@@ -53,7 +53,8 @@ class DQN(Model):
         
         # TODO: implement
         if np.random.random() < epsilon:
-            return self.actions.sample()
+            rand=np.random.randint(0,len(self.actions))
+            return rand
         else:
             q_vals = self.predict_on_batch(state)
             return np.argmax(q_vals)
@@ -128,18 +129,14 @@ def format_batch(batch, target_network, gamma):
 
     # TODO: Modifier pour que cela fonctionne avec le format de Jump King
     state_height = np.vstack([x[0][0] for x in batch])
-    #state_height=torch.float32(state_height)
     state_x=np.vstack([x[0][1] for x in batch])
-    #state_height=torch.float32(state_height)
     state_y = np.vstack([x[0][2] for x in batch])
-    #state_y=torch.float32(state_y)
     jumping = np.vstack([x[0][3] for x in batch])
-    #jumping=torch.float32(jumping)
     edges=[]
     i=0
     for x in batch:
         j = 0
-        edges.append(np.zeros(120))
+        edges.append(np.zeros(200))
         for y in range(len(x[0][4])):
             edges[i][j]=x[0][4][y][0]
             edges[i][j+1] = x[0][4][y][1]
@@ -151,18 +148,15 @@ def format_batch(batch, target_network, gamma):
     actions = np.array([x[1] for x in batch])
     rewards = np.array([x[2] for x in batch])
     next_state_height = np.vstack([x[3][0] for x in batch])
-    #next_state_height=torch.float32(next_state_height)
     next_state_x = np.vstack([x[3][1] for x in batch])
-   # next_state_x=torch.float32(next_state_x)
     next_state_y = np.vstack([x[3][2] for x in batch])
-    #next_state_y=torch.float32(next_state_y)
+
     next_jumping = np.vstack([x[3][3] for x in batch])
-    #next_jumping=torch.float32(next_jumping)
     next_edges = []
     i = 0
     for x in batch:
         j = 0
-        next_edges.append(np.zeros(120))
+        next_edges.append(np.zeros(200))
         for y in range(len(x[3][4])):
             next_edges[i][j] = x[3][4][y][0]
             next_edges[i][j + 1] = x[3][4][y][1]
@@ -172,15 +166,30 @@ def format_batch(batch, target_network, gamma):
         i += 1
     next_edges=np.vstack(next_edges)
     states=torch.FloatTensor(np.concatenate((state_height,state_x,state_y,jumping,edges),axis=1))
-    print(states)
     next_states=torch.FloatTensor(np.concatenate((next_state_height,next_state_x,next_state_y,next_jumping,next_edges),axis=1))
     # dones = np.array([x[4] for x in batch])
     next_q_vals = target_network.predict_on_batch(next_states)
     max_q_vals = np.max(next_q_vals, axis=-1)
     targets = rewards + gamma * max_q_vals
     # return state_height, (actions, targets)
-    return states, (actions,targets),next_states
+    return states, (actions,targets)
 
+def state_format(x):
+    state_height =x[0]
+    state_x = x[1]
+    state_y = x[2]
+    jumping = x[3]
+    edges=np.zeros(200)
+    j=0
+    for y in range(len(x[4])):
+        edges[j] = x[4][y][0]
+        edges[j + 1] = x[4][y][1]
+        edges[j + 2] = x[4][y][2]
+        edges[j + 3] = x[4][y][3]
+        j+=4
+    statesTensorFormat = torch.FloatTensor(np.concatenate(([state_height, state_x, state_y, jumping], edges), axis=0))
+
+    return statesTensorFormat
 
 def dqn_loss(y_pred, y_target):
     '''
