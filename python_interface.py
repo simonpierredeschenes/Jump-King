@@ -1,10 +1,9 @@
 import asyncio
 import websockets
 from agent import Agent
-import time
 
 agent = Agent()
-episode_start_time = None
+steps_since_reset = 0
 
 
 def parse_lines(lines_str):
@@ -150,18 +149,15 @@ async def on_receive(websocket):
     async for historic_entry_str in websocket:
         historic_entry = parse_historic_entry(historic_entry_str)
         agent.add_entry_to_historic(*historic_entry)
-        
-        global episode_start_time
-        if episode_start_time is None:
-            episode_start_time = time.time()
-        
 
+        global steps_since_reset
         response = ""
-        if time.time() - episode_start_time < 30:
+        if steps_since_reset < 100:
+            steps_since_reset += 1
             action = agent.choose_action()
             response = action_to_string(action)
         else:
-            episode_start_time = None
+            steps_since_reset = 0
             response = "RST"
 
         await websocket.send(response)

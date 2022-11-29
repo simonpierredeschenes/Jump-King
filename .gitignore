@@ -30,4 +30,6 @@ pnacl/
 BrowserMetrics-spare.pma
 Safe Browsing/
 .idea/
+__pycache__/
+venv/
 
