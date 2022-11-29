@@ -28,7 +28,7 @@ class Agent:
 
     def choose_action(self):
         direction = -1
-        if len(self.historic) >= 5:
+        if len(self.historic) >= 5 and self.historic[-1][1][0] != 0:
             direction = self.historic[-1][1][0] * -1
             for i in range(5):
                 if self.historic[-1][1][0] != self.historic[len(self.historic)-1-i][1][0]:
