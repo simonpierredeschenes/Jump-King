@@ -148,7 +148,7 @@ function draw() {
     push()
     translate(0, 50);
     if (testingRLAgent) {
-        if (previousState != null && gameUpdateCounter < 24) {
+        if (previousState != null && gameUpdateCounter < 12) {
             image(levels[player.currentLevelNo].levelImage, 0, 0)
             levels[player.currentLevelNo].show();
             player.Update();
@@ -474,7 +474,7 @@ function historicEntryToString(previousState, previousAction, reward, currentSta
 let previousState = null;
 function addCurrentStateToHistoric()
 {
-    if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == 24))
+    if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == 12))
     {
         currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
         if(previousState != null) {

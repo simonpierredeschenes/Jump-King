@@ -152,7 +152,7 @@ async def on_receive(websocket):
 
         global steps_since_reset
         response = ""
-        if steps_since_reset < 100:
+        if steps_since_reset < 150:
             steps_since_reset += 1
             action = agent.choose_action()
             response = action_to_string(action)
