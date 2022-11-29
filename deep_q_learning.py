@@ -40,6 +40,8 @@ class ReplayBuffer:
     def get_size(self):
         return len(self.__buffer)
 
+    def get_n_element(self,n):
+        return self.__buffer[n]
 
 class DQN(Model):
     def __init__(self, actions, *args, **kwargs):
@@ -217,61 +219,60 @@ def set_random_seed(seed, environment):
     torch.manual_seed(seed)  # NEW
 
 
-def run(batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate):
-    environment = gym.make("LunarLander-v2")
-    set_random_seed(seed, environment)
-
-    # TODO: implement the Deep Q-Learning strategy here
-    model = NNModel(environment.observation_space.shape[0], environment.action_space.n)
-    source_network = DQN(environment.action_space, model, torch.optim.Adam(model.parameters(), lr=learning_rate), loss_function=dqn_loss)
-    target_network = deepcopy(source_network)
-    replay_buffer = ReplayBuffer(buffer_size)
-    epsilon = 1.0
-    total_n_steps = 0
-    with open("dql.csv", "w+") as file:
-        file.write("total_nb_steps,cumulative_reward,loss\n")
-        for n_trajectories in range(NB_TRAJECTORIES):
-            trajectory_done = False
-            G = 0
-            last_loss_episode = 0
-            state, _ = environment.reset(seed=seed)
-            state = state.astype(np.float32)
-            while not trajectory_done:
-                action = source_network.get_action(state, epsilon)
-
-                next_state, reward, terminated, truncated, _ = environment.step(action)
-                trajectory_done = terminated or truncated
-                next_state = next_state.astype(np.float32)
-
-                G += reward
-
-                replay_buffer.store((state, action, reward, next_state, trajectory_done))
-                total_n_steps += 1
-
-                if replay_buffer.get_size() > batch_size and total_n_steps % training_interval == 0:
-                    minibatch = replay_buffer.get_batch(batch_size)
-                    formatted_minibatch = format_batch(minibatch, target_network, gamma)
-                    last_loss_episode = source_network.train_on_batch(*formatted_minibatch)
-                    target_network.soft_update(source_network, tau)
-
-                state = next_state
-
-            print(f"After {n_trajectories + 1} trajectories, we have G_0 = {G:.2f}, {epsilon:4f}")
-            epsilon = max(epsilon * 0.99, 0.05)
-            file.write(f"{total_n_steps},{G},{last_loss_episode}\n")
-            environment.close()
-
-    if RUN_VISUALIZATION:
-        environment = gym.make("LunarLander-v2", render_mode="human")
-        set_random_seed(seed, environment)
-        state, _ = environment.reset(seed=seed)
-        done = False
-        while not done:
-            action = source_network.get_action(state, 0)
-            state, _, terminated, truncated, _ = environment.step(action)
-            done = terminated or truncated
-            environment.render()
-        environment.close()
+# def run(batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate):
+#     environment = gym.make("LunarLander-v2")
+#     set_random_seed(seed, environment)
+#
+#     model = NNModel(environment.observation_space.shape[0], environment.action_space.n)
+#     source_network = DQN(environment.action_space, model, torch.optim.Adam(model.parameters(), lr=learning_rate), loss_function=dqn_loss)
+#     target_network = deepcopy(source_network)
+#     replay_buffer = ReplayBuffer(buffer_size)
+#     epsilon = 1.0
+#     total_n_steps = 0
+#     with open("dql.csv", "w+") as file:
+#         file.write("total_nb_steps,cumulative_reward,loss\n")
+#         for n_trajectories in range(NB_TRAJECTORIES):
+#             trajectory_done = False
+#             G = 0
+#             last_loss_episode = 0
+#             state, _ = environment.reset(seed=seed)
+#             state = state.astype(np.float32)
+#             while not trajectory_done:
+#                 action = source_network.get_action(state, epsilon)
+#
+#                 next_state, reward, terminated, truncated, _ = environment.step(action)
+#                 trajectory_done = terminated or truncated
+#                 next_state = next_state.astype(np.float32)
+#
+#                 G += reward
+#
+#                 replay_buffer.store((state, action, reward, next_state, trajectory_done))
+#                 total_n_steps += 1
+#
+#                 if replay_buffer.get_size() > batch_size and total_n_steps % training_interval == 0:
+#                     minibatch = replay_buffer.get_batch(batch_size)
+#                     formatted_minibatch = format_batch(minibatch, target_network, gamma)
+#                     last_loss_episode = source_network.train_on_batch(*formatted_minibatch)
+#                     target_network.soft_update(source_network, tau)
+#
+#                 state = next_state
+#
+#             print(f"After {n_trajectories + 1} trajectories, we have G_0 = {G:.2f}, {epsilon:4f}")
+#             epsilon = max(epsilon * 0.99, 0.05)
+#             file.write(f"{total_n_steps},{G},{last_loss_episode}\n")
+#             environment.close()
+#
+#     if RUN_VISUALIZATION:
+#         environment = gym.make("LunarLander-v2", render_mode="human")
+#         set_random_seed(seed, environment)
+#         state, _ = environment.reset(seed=seed)
+#         done = False
+#         while not done:
+#             action = source_network.get_action(state, 0)
+#             state, _, terminated, truncated, _ = environment.step(action)
+#             done = terminated or truncated
+#             environment.render()
+#         environment.close()
 
 
 # if __name__ == "__main__":
