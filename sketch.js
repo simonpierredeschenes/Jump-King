@@ -95,6 +95,11 @@ function setup() {
     if (testingRLAgent) {
         setInterval(addCurrentStateToHistoric, 200);
         setInterval(executeCurrentAction, 2.5);
+        /* TEST: ÇA ne semble pas faire quoi que ce soit... */
+        /*
+        setInterval(player.ResetPlayer(),20000)
+
+         */
     }
 
     // lines.push(new Line(200,height - 80,width - 200, height-80));
@@ -258,7 +263,7 @@ function keyPressed() {
                 fallSound.stop();
                 break;
         }
-    
+
         switch (keyCode) {
             case LEFT_ARROW:
                 player.leftHeld = true;
@@ -283,10 +288,10 @@ function keyReleased() {
                 evolationSpeed = 1;
                 mutePlayers = false;
                 break;
-    
-    
+
+
             case ' ':
-    
+
                 if (!creatingLines) {
                     player.jumpHeld = false
                     player.Jump()
@@ -317,12 +322,12 @@ function keyReleased() {
                 break;
             case 'D':
                 if (creatingLines) {
-    
+
                     mousePos1 = null;
                     mousePos2 = null;
                 }
         }
-    
+
         switch (keyCode) {
             case LEFT_ARROW:
                 player.leftHeld = false;
@@ -333,7 +338,7 @@ function keyReleased() {
             case DOWN_ARROW:
                 evolationSpeed = constrain(evolationSpeed - 1, 0, 50);
                 print(evolationSpeed)
-    
+
                 break;
             case UP_ARROW:
                 evolationSpeed = constrain(evolationSpeed + 1, 0, 50);
@@ -367,11 +372,11 @@ function mouseClicked() {
         } else if (placingPlayer && !playerPlaced) {
             playerPlaced = true;
             player.currentPos = createVector(mouseX, mouseY);
-    
-    
+
+
         } else if (placingCoins) {
-    
-    
+
+
         }
         print("levels[" + player.currentLevelNo + "].coins.push(new Coin( " + floor(mouseX) + "," + floor(mouseY - 50) + ' , "progress" ));');
     }

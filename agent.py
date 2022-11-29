@@ -31,7 +31,7 @@ class Agent:
         #Dans le contexte des tests, je vais implémenter les paramètres directement en attribut de l'objet
         #batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate
         self.actions=numpy.array([[-1,1],[1,1],[-1,0],[1,0],[0,1],[0,0]])
-        self.batchSize=100
+        self.batchSize=200
         self.gamma=0.99
         self.bufferSize=10000
         self.tau=1e-3
@@ -50,7 +50,7 @@ class Agent:
         self.nbTrajectories=2000
         self.G=0
         self.last_loss_episode=0
-        self.pretraining=200
+        self.pretraining=1000
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         actionIndex=0
@@ -85,7 +85,7 @@ class Agent:
             jump=self.actions[self.choose_action_NN()][1]
 
         if self.historic.get_size()%500==0:
-            A=deep_q_learning.format_batch(self.historic,self.target_network,self.gamma)
+            A=deep_q_learning.format_batch(self.historic.matriceIterable(),self.target_network,self.gamma)
 
             f = open('historique'+str(self.historic.get_size())+'.csv', 'w',newline='')
             writer=csv.writer(f)

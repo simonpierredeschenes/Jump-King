@@ -1,5 +1,6 @@
 import random
 
+import numpy
 from poutyne import Model
 from copy import deepcopy  # NEW
 
@@ -42,6 +43,13 @@ class ReplayBuffer:
 
     def get_n_element(self,n):
         return self.__buffer[n]
+
+    def matriceIterable(self):
+        iterable=[]
+        for i in range(self.get_size()):
+            iterable.append(self.get_n_element(i))
+        iterable=numpy.array(iterable)
+        return iterable
 
 class DQN(Model):
     def __init__(self, actions, *args, **kwargs):
