@@ -377,6 +377,13 @@ function mouseClicked() {
     }
 }
 
+function extractOpcodeAndContent(data)
+{
+    let opcode = data.substring(0, 3);
+    let content  = data.substring(3, data.length);
+    return [opcode, content];
+}
+
 function parseAction(data)
 {
     let commaIndex = data.indexOf(",");
@@ -389,8 +396,25 @@ let currentAction = null;
 let currentSequenceNumber = 0;
 function onReceive({data})
 {
-    currentAction = parseAction(data);
-    currentSequenceNumber = (currentSequenceNumber + 1) % 100;
+    let [opcode, content] = extractOpcodeAndContent(data);
+    if(opcode == "ACT")
+    {
+        currentAction = parseAction(content);
+        currentSequenceNumber = (currentSequenceNumber + 1) % 100;
+    }
+    else if(opcode == "RST")
+    {
+        player.ResetPlayer();
+        previousAction = [0, false];
+        currentAction = null;
+        previousState = null;
+        sequenceNumberOfLastExecution = 0;
+        currentSequenceNumber = 0;
+    }
+    else
+    {
+        throw new RangeError("Invalid OP code received from Python interface!");
+    }
 }
 
 function stateToString(state)

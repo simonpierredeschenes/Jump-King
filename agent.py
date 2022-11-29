@@ -58,9 +58,9 @@ class Agent:
         self.historic.append((previous_state, actionIndex, reward, next_state))
 
     def choose_action(self):
-        if len(self.historic)<self.pretraining:
+        if len(self.historic) < self.pretraining:
             direction = -1
-            if len(self.historic) >= 5:
+            if len(self.historic) >= 5 and self.actions[self.historic[-1][1]][0] != 0:
                 direction = self.actions[self.historic[-1][1]][0] * -1
                 for i in range(5):
                     if self.actions[self.historic[-1][1]][0] != self.actions[self.historic[len(self.historic)-1-i][1]][0]:
