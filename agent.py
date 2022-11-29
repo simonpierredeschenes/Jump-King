@@ -26,12 +26,12 @@ import torch
 from copy import deepcopy
 
 class Agent:
-    def __init__(self):
-        self.historic = []
+    def __init__(self,historic=None):
+        #self.historic = []
         #Dans le contexte des tests, je vais implémenter les paramètres directement en attribut de l'objet
         #batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate
         self.actions=numpy.array([[-1,1],[1,1],[-1,0],[1,0],[0,1],[0,0]])
-        self.batchSize=100
+        self.batchSize=200
         self.gamma=0.99
         self.bufferSize=10000
         self.tau=1e-3
@@ -41,12 +41,16 @@ class Agent:
         self.model=deep_q_learning.NNModel(204,6,6,2040)
         self.source_network=deep_q_learning.DQN(self.actions,self.model,torch.optim.Adam(self.model.parameters(), lr=self.learningRate), loss_function=deep_q_learning.dqn_loss)
         self.target_network=deepcopy(self.source_network)
-        self.replayBuffer=deep_q_learning.ReplayBuffer(self.bufferSize)
+        #self.historic est maintenant le replayBuffer
+        if historic==None:
+            self.historic=deep_q_learning.ReplayBuffer(self.bufferSize)
+        else:
+            self.historic=historic
         self.total_n_steps=0
         self.nbTrajectories=2000
         self.G=0
         self.last_loss_episode=0
-        self.pretraining=200
+        self.pretraining=1000
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         actionIndex=0
@@ -55,35 +59,35 @@ class Agent:
                 actionIndex=k
             else:
                 pass
-        self.historic.append((previous_state, actionIndex, reward, next_state))
+        self.historic.store((previous_state, actionIndex, reward, next_state))
 
     def choose_action(self):
-        if len(self.historic) < self.pretraining:
+        if self.historic.get_size() < self.pretraining:
             direction = -1
-            if len(self.historic) >= 5 and self.actions[self.historic[-1][1]][0] != 0:
-                direction = self.actions[self.historic[-1][1]][0] * -1
+            if self.historic.get_size() >= 5 and self.actions[self.historic.get_n_element(-1)[1]][0] != 0:
+                direction = self.actions[self.historic.get_n_element(-1)[1]][0] * -1
                 for i in range(5):
-                    if self.actions[self.historic[-1][1]][0] != self.actions[self.historic[len(self.historic)-1-i][1]][0]:
-                        direction = self.actions[self.historic[-1][1]][0]
+                    if self.actions[self.historic.get_n_element(-1)[1]][0] != self.actions[self.historic.get_n_element(self.historic.get_size()-1-i)[1]][0]:
+                        direction = self.actions[self.historic.get_n_element(-1)[1]][0]
                         break
 
             jump = True
-            if len(self.historic) >= 4:
-                jump = not self.actions[self.historic[-1][1]][1]
+            if self.historic.get_size() >= 4:
+                jump = not self.actions[self.historic.get_n_element(-1)[1]][1]
                 for i in range(4):
-                    if self.actions[self.historic[-1][1]][1] != self.actions[self.historic[len(self.historic)-1-i][1]][1]:
-                        jump = self.actions[self.historic[-1][1]][1]
+                    if self.actions[self.historic.get_n_element(-1)[1]][1] != self.actions[self.historic.get_n_element(self.historic.get_size()-1-i)[1]][1]:
+                        jump = self.actions[self.historic.get_n_element(-1)[1]][1]
                         break
         else:
-            if len(self.historic)==self.pretraining:
+            if self.historic.get_size()==self.pretraining:
                 print("--->Début du NN<----")
             direction=self.actions[self.choose_action_NN()][0]
             jump=self.actions[self.choose_action_NN()][1]
 
-        if len(self.historic)%500==0:
-            A=deep_q_learning.format_batch(self.historic,self.target_network,self.gamma)
+        if self.historic.get_size()%500==0:
+            A=deep_q_learning.format_batch(self.historic.matriceIterable(),self.target_network,self.gamma)
 
-            f = open('historique'+str(len(self.historic))+'.csv', 'w',newline='')
+            f = open('historique'+str(self.historic.get_size())+'.csv', 'w',newline='')
             writer=csv.writer(f)
             for row in range(len(A)):
                 writer.writerow(A[row][:])
@@ -91,17 +95,17 @@ class Agent:
         return direction, jump
 
     def choose_action_NN(self):
-        next_state = self.historic[-1][3]
-        state=self.historic[-1][0]
-        action=self.historic[-1][1]
-        reward=self.historic[-1][2]
+        next_state = self.historic.get_n_element(-1)[3]
+        state=self.historic.get_n_element(-1)[0]
+        action=self.historic.get_n_element(-1)[1]
+        reward=self.historic.get_n_element(-1)[2]
         self.G += reward
 
-        self.replayBuffer.store((state, action, reward, next_state))
+        self.historic.store((state, action, reward, next_state))
         self.total_n_steps += 1
 
-        if self.replayBuffer.get_size() > self.batchSize and self.total_n_steps % self.trainingInterval == 0:
-            minibatch = self.replayBuffer.get_batch(self.batchSize)
+        if self.historic.get_size() > self.batchSize and self.total_n_steps % self.trainingInterval == 0:
+            minibatch = self.historic.get_batch(self.batchSize)
             formatted_minibatch = deep_q_learning.format_batch(minibatch, self.target_network, self.gamma)
             input=torch.FloatTensor(formatted_minibatch[0])
             output=torch.FloatTensor(formatted_minibatch[1])
@@ -114,7 +118,7 @@ class Agent:
 
             trajectory_done = False
             #state, _ = environment.reset(seed=seed)
-            state = deep_q_learning.state_format(self.historic[-1][-1])
+            state = deep_q_learning.state_format(self.historic.get_n_element(-1)[-1])
             if not trajectory_done:
                 action = self.source_network.get_action(state, self.epsilon)
             self.epsilon = max(self.epsilon * 0.99, 0.05)
