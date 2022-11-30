@@ -159,7 +159,18 @@ async def on_receive(websocket):
         else:
             steps_since_reset = 0
             response = "RST"
+            agent.episode+=1
 
+            if agent.episode==1:
+                with open("dql_episode.csv", "w+", newline="") as file:
+                    file.write("Episode,cumulative_reward,loss\n")
+                    file.write(str(agent.episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
+                    print(agent.episode, agent.G, agent.last_loss_episode)
+            else:
+                with open("dql_episode.csv", "a", newline="") as file:
+                    file.write(str(agent.episode)+","+str(agent.G)+","+str(agent.last_loss_episode)+"\n")
+                    print(agent.episode, agent.G, agent.last_loss_episode)
+            agent.G = 0
         await websocket.send(response)
 
 

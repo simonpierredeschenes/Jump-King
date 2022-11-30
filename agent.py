@@ -50,7 +50,9 @@ class Agent:
         self.nbTrajectories=2000
         self.G=0
         self.last_loss_episode=0
-        self.pretraining=1000
+        self.pretraining=300
+        self.episode=0
+        self.loss=0
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         actionIndex=0
@@ -113,14 +115,20 @@ class Agent:
             self.target_network.soft_update(self.source_network, self.tau)
 
         state = next_state
-        with open("dql.csv", "w+") as file:
-            file.write("total_nb_steps,cumulative_reward,loss\n")
 
-            trajectory_done = False
+        if self.total_n_steps==1:
+            with open("dql.csv", "w+", newline="") as file:
+                file.write("total_nb_steps,cumulative_reward,loss\n")
+                file.write(str(self.total_n_steps)+","+str(self.G)+","+str(self.last_loss_episode)+"\n")
+                print("Après "+str(self.total_n_steps)+" actions: reward "+","+str(self.G)+", dernier loss: "+str(self.last_loss_episode)+"\n")
+        else:
+            with open("dql.csv", "a", newline="") as file:
+                file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
+                print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(
+                    self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
             #state, _ = environment.reset(seed=seed)
             state = deep_q_learning.state_format(self.historic.get_n_element(-1)[-1])
-            if not trajectory_done:
-                action = self.source_network.get_action(state, self.epsilon)
+            action = self.source_network.get_action(state, self.epsilon)
             self.epsilon = max(self.epsilon * 0.99, 0.05)
             # condition d'arrêt pour trajectory_done
         return action
