@@ -148,13 +148,13 @@ function draw() {
     push()
     translate(0, 50);
     if (testingRLAgent) {
+        image(levels[player.currentLevelNo].levelImage, 0, 0)
+        levels[player.currentLevelNo].show();
         if (previousState != null && gameUpdateCounter < 12) {
-            image(levels[player.currentLevelNo].levelImage, 0, 0)
-            levels[player.currentLevelNo].show();
             player.Update();
-            player.Show();
             gameUpdateCounter += 1;
         }
+        player.Show();
     } else if(testingSinglePlayer) {
         image(levels[player.currentLevelNo].levelImage, 0, 0)
         levels[player.currentLevelNo].show();
@@ -481,6 +481,7 @@ function addCurrentStateToHistoric()
             reward = currentState[0] - previousState[0];
             socket.send(historicEntryToString(previousState, previousAction, reward, currentState));
             waitingOnAction = true;
+            player.isGameStopped = true;
         }
         previousState = currentState;
     }
@@ -503,6 +504,7 @@ function executeCurrentAction()
         previousAction = currentAction;
         sequenceNumberOfLastExecution = currentSequenceNumber;
         waitingOnAction = false;
+        player.isGameStopped = false;
         gameUpdateCounter = 0;
     }
 }

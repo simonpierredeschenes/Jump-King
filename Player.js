@@ -156,6 +156,7 @@ class Player {
         this.facingRight = true;
         this.hasBumped = false;
         this.isRunning = false;
+        this.isGameStopped = false;
         this.isSlidding = false;
         this.currentRunIndex = 1;
         this.runCycle = [run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run1Image, run2Image, run2Image, run2Image, run2Image, run2Image, run2Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run3Image, run2Image, run2Image, run2Image, run2Image, run2Image, run2Image]
@@ -230,6 +231,7 @@ class Player {
         this.facingRight = true;
         this.hasBumped = false;
         this.isRunning = false;
+        this.isGameStopped = false;
         this.isSlidding = false;
         this.currentRunIndex = 1;
         this.sliddingRight = false;
@@ -807,8 +809,10 @@ class Player {
         if (this.hasBumped) return oofImage;
         if (this.currentSpeed.y < 0) return jumpImage;
         if (this.isRunning) {
-
-            this.currentRunIndex += 1;
+            if(!this.isGameStopped)
+            {
+                this.currentRunIndex += 1;
+            }
             if (this.currentRunIndex >= this.runCycle.length) this.currentRunIndex = 0;
             return (this.runCycle[this.currentRunIndex])
 
