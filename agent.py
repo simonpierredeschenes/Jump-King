@@ -129,6 +129,6 @@ class Agent:
             #state, _ = environment.reset(seed=seed)
             state = deep_q_learning.state_format(self.historic.get_n_element(-1)[-1])
             action = self.source_network.get_action(state, self.epsilon)
-            self.epsilon = max(self.epsilon * 0.99, 0.05)
+            self.epsilon = max(self.epsilon * 0.9999, 0.05)
             # condition d'arrêt pour trajectory_done
         return action
