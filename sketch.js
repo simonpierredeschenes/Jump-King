@@ -28,6 +28,8 @@ let playerPlaced = false;
 
 let testingRLAgent = true;
 let testingSinglePlayer = true;
+let waitingOnAction = false;
+let gameUpdateCounter = 0;
 
 
 let fallSound = null;
@@ -93,13 +95,8 @@ function setup() {
     bumpSound.playMode('sustain');
     landSound.playMode('sustain');
     if (testingRLAgent) {
-        setInterval(addCurrentStateToHistoric, 200);
-        setInterval(executeCurrentAction, 2.5);
-        /* TEST: ÇA ne semble pas faire quoi que ce soit... */
-        /*
-        setInterval(player.ResetPlayer(),20000)
-
-         */
+        setInterval(addCurrentStateToHistoric, 10);
+        setInterval(executeCurrentAction, 10);
     }
 
     // lines.push(new Line(200,height - 80,width - 200, height-80));
@@ -150,7 +147,15 @@ function draw() {
     // }
     push()
     translate(0, 50);
-    if (testingSinglePlayer || testingRLAgent) {
+    if (testingRLAgent) {
+        if (previousState != null && gameUpdateCounter < 12) {
+            image(levels[player.currentLevelNo].levelImage, 0, 0)
+            levels[player.currentLevelNo].show();
+            player.Update();
+            player.Show();
+            gameUpdateCounter += 1;
+        }
+    } else if(testingSinglePlayer) {
         image(levels[player.currentLevelNo].levelImage, 0, 0)
         levels[player.currentLevelNo].show();
         player.Update();
@@ -415,6 +420,8 @@ function onReceive({data})
         previousState = null;
         sequenceNumberOfLastExecution = 0;
         currentSequenceNumber = 0;
+        waitingOnAction = false;
+        gameUpdateCounter = 0;
     }
     else
     {
@@ -467,12 +474,13 @@ function historicEntryToString(previousState, previousAction, reward, currentSta
 let previousState = null;
 function addCurrentStateToHistoric()
 {
-    if(agentReady)
+    if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == 12))
     {
         currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
         if(previousState != null) {
             reward = currentState[0] - previousState[0];
             socket.send(historicEntryToString(previousState, previousAction, reward, currentState));
+            waitingOnAction = true;
         }
         previousState = currentState;
     }
@@ -494,6 +502,8 @@ function executeCurrentAction()
         player.jumpHeld = currentAction[1];
         previousAction = currentAction;
         sequenceNumberOfLastExecution = currentSequenceNumber;
+        waitingOnAction = false;
+        gameUpdateCounter = 0;
     }
 }
 
