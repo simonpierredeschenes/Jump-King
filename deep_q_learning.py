@@ -14,11 +14,15 @@ NB_TRAJECTORIES = 1200
 RUN_VISUALIZATION = False
 
 class ReplayBuffer:
-    def __init__(self, buffer_size):
+    def __init__(self, buffer_size,avecDemo):
         self.__buffer_size = buffer_size
         # TODO: add any needed attributes
         self.__buffer = deque()
-
+        self.permanent=None
+        if avecDemo==True:
+            self.permanentEtReplay=ReplayBuffer(buffer_size,False)
+        else:
+            self.permanentEtReplay=None
     def store(self, element):
         '''
         Stores an element. If the replay buffer is already full, deletes the oldest
@@ -50,6 +54,21 @@ class ReplayBuffer:
             iterable.append(self.get_n_element(i))
         iterable=numpy.array(iterable)
         return iterable
+    def viderReplay(self):
+        self.__buffer = deque()
+    def replayAvecPermanent(self):
+        self.permanentEtReplay.viderReplay()
+        for i in range(0,self.get_size(),1):
+            self.permanentEtReplay.store(self.get_n_element(i))
+        if self.permanent!=None:
+            for j in range(0,self.permanent.get_size(),1):
+                self.permanentEtReplay.store(self.permanent.get_n_element(j))
+        else:
+            pass
+
+    def batchReplayAvecPermanent(self,batch_size):
+        self.replayAvecPermanent()
+        return self.permanentEtReplay.get_batch(batch_size)
 
 class DQN(Model):
     def __init__(self, actions, *args, **kwargs):
@@ -60,8 +79,7 @@ class DQN(Model):
         '''
         Returns the selected action according to an epsilon-greedy policy.
         '''
-        
-        # TODO: implement
+
         if np.random.random() < epsilon:
             rand=np.random.randint(0,len(self.actions))
             return rand
@@ -137,7 +155,6 @@ def format_batch(batch, target_network, gamma):
     #   The third element is the reward received after the previous action
     #   The fourth element is the next state
 
-    # TODO: Modifier pour que cela fonctionne avec le format de Jump King
     state_height = np.vstack([x[0][0] for x in batch])
     state_x=np.vstack([x[0][1] for x in batch])
     state_y = np.vstack([x[0][2] for x in batch])
@@ -281,6 +298,17 @@ def set_random_seed(seed, environment):
 #             done = terminated or truncated
 #             environment.render()
 #         environment.close()
+class demo():
+    def __init__(self):
+        self.compteur=0
+        self.lenhistoric=1
+
+    def demonstration(self):
+        historique=[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[-1,0],[-1,0],[-1,0],[-1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[1,1],[1,1],[1,1],[1,1],[1,1],[1,0],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[1,1],[1,1],[1,1],[1,1],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[1,1],[1,1],[1,1],[1,1],[1,1],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[1,0],[1,0],[-1,1],[-1,1],[-1,1],[-1,1],[0,0],[0,0],[0,0],[0,0],[0,0],[1,0],[1,0],[0,0],[0,0],[0,0],[-1,1],[-1,1],[-1,1],[-1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[1,0],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[-1,1],[-1,1],[-1,1],[-1,0],[0,0],[0,0],[0,0],[0,0],[1,1],[1,1],[1,1],[1,1],[1,1],[1,1],[1,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0]]
+        self.lenhistoric=len(historique)-1
+        self.compteur+=1
+        return historique[self.compteur-1]
+
 
 
 # if __name__ == "__main__":

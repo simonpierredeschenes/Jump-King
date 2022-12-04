@@ -43,16 +43,18 @@ class Agent:
         self.target_network=deepcopy(self.source_network)
         #self.historic est maintenant le replayBuffer
         if historic==None:
-            self.historic=deep_q_learning.ReplayBuffer(self.bufferSize)
+            self.historic=deep_q_learning.ReplayBuffer(self.bufferSize,True)
         else:
             self.historic=historic
         self.total_n_steps=0
         self.nbTrajectories=2000
         self.G=0
         self.last_loss_episode=0
-        self.pretraining=300
+        self.pretraining=500
         self.episode=0
         self.loss=0
+        self.demo=deep_q_learning.demo()
+        self.longueurDemo=59
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
         actionIndex=0
@@ -64,7 +66,15 @@ class Agent:
         self.historic.store((previous_state, actionIndex, reward, next_state))
 
     def choose_action(self):
-        if self.historic.get_size() < self.pretraining:
+        if self.demo.compteur<self.demo.lenhistoric:
+            return self.demo.demonstration()[0],self.demo.demonstration()[1]
+        elif self.historic.get_size() < self.pretraining:
+            if self.demo.compteur == self.demo.lenhistoric:
+                self.historic.permanent = self.historic
+            #On enregistre l'historique des actions de démonstrations dans un replay à part
+
+
+            #ici ça pourrait être une autre méthode pour populer l'historique
             direction = -1
             if self.historic.get_size() >= 5 and self.actions[self.historic.get_n_element(-1)[1]][0] != 0:
                 direction = self.actions[self.historic.get_n_element(-1)[1]][0] * -1
@@ -107,7 +117,9 @@ class Agent:
         self.total_n_steps += 1
 
         if self.historic.get_size() > self.batchSize and self.total_n_steps % self.trainingInterval == 0:
-            minibatch = self.historic.get_batch(self.batchSize)
+            #minibatch sans démonstration
+            #minibatch = self.historic.get_batch(self.batchSize)
+            minibatch = self.historic.batchReplayAvecPermanent(self.batchSize)
             formatted_minibatch = deep_q_learning.format_batch(minibatch, self.target_network, self.gamma)
             input=torch.FloatTensor(formatted_minibatch[0])
             output=torch.FloatTensor(formatted_minibatch[1])
