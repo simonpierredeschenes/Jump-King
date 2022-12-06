@@ -31,6 +31,7 @@ let testingSinglePlayer = true;
 let waitingOnAction = false;
 let gameUpdateCounter = 0;
 
+const NB_FRAMES_BETWEEN_AGENT_CALLS = 0.1 * 60;
 
 let fallSound = null;
 let jumpSound = null;
@@ -150,7 +151,7 @@ function draw() {
     if (testingRLAgent) {
         image(levels[player.currentLevelNo].levelImage, 0, 0)
         levels[player.currentLevelNo].show();
-        if (previousState != null && gameUpdateCounter < 12) {
+        if (previousState != null && gameUpdateCounter < NB_FRAMES_BETWEEN_AGENT_CALLS) {
             player.Update();
             gameUpdateCounter += 1;
         }
@@ -474,7 +475,7 @@ function historicEntryToString(previousState, previousAction, reward, currentSta
 let previousState = null;
 function addCurrentStateToHistoric()
 {
-    if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == 12))
+    if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == NB_FRAMES_BETWEEN_AGENT_CALLS))
     {
         currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
         if(previousState != null) {
