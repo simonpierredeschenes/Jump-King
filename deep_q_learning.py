@@ -349,7 +349,6 @@ class demo():
 
         self.lenhistoric=len(historique)-1
         self.compteur+=1
-        print(self.lenhistoric)
         return historique[self.compteur-1]
 
 

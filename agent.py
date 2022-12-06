@@ -67,7 +67,8 @@ class Agent:
 
     def choose_action(self):
         if self.demo.compteur<self.demo.lenhistoric:
-            return self.demo.demonstration()[0],self.demo.demonstration()[1]
+            action = self.demo.demonstration()
+            return action[0], action[1]
         elif self.historic.get_size() < self.pretraining:
             if self.demo.compteur == self.demo.lenhistoric:
                 self.historic.permanent = self.historic
