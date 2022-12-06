@@ -1,4 +1,4 @@
-# The agent is called 5 times per second approximately
+# The agent is called 10 times per second approximately
 # Each time, it must compute the next action based on its historic
 #
 # A state is a vector of size 5
