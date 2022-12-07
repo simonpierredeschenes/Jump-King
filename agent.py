@@ -17,131 +17,93 @@
 #   The second element is the previous action
 #   The third element is the reward received after the previous action
 #   The fourth element is the next state
+
 import csv
-
-import numpy
-
-import deep_q_learning
-import torch
+import numpy as np
 from copy import deepcopy
+from deep_q_learning import DQN, NNModel, format_batch, format_state, dqn_loss
+from replay_buffer import ReplayBuffer
+from demonstration import Demonstration
+import torch
+
+ACTIONS = np.array([[-1, 1], [1, 1], [-1, 0], [1, 0], [0, 1], [0, 0]])
+BATCH_SIZE = 200
+GAMMA = 0.99
+BUFFER_SIZE = 10000
+TAU = 1e-3
+TRAINING_INTERVAL = 20
+LEARNING_RATE = 5e-4
+
 
 class Agent:
-    def __init__(self,historic=None):
-        #self.historic = []
-        #Dans le contexte des tests, je vais implémenter les paramètres directement en attribut de l'objet
-        #batch_size, gamma, buffer_size, seed, tau, training_interval, learning_rate
-        self.actions=numpy.array([[-1,1],[1,1],[-1,0],[1,0],[0,1],[0,0]])
-        self.batchSize=200
-        self.gamma=0.99
-        self.bufferSize=10000
-        self.tau=1e-3
-        self.epsilon=1
-        self.trainingInterval=20
-        self.learningRate=5e-4
-        self.model=deep_q_learning.NNModel(204,6,6,2040)
-        self.source_network=deep_q_learning.DQN(self.actions,self.model,torch.optim.Adam(self.model.parameters(), lr=self.learningRate), loss_function=deep_q_learning.dqn_loss)
-        self.target_network=deepcopy(self.source_network)
-        #self.historic est maintenant le replayBuffer
-        if historic==None:
-            self.historic=deep_q_learning.ReplayBuffer(self.bufferSize,True)
+    def __init__(self, historic=None):
+        self.epsilon = 1
+        self.model = NNModel(204, 6, 6, 2040)
+        self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE), loss_function=dqn_loss)
+        self.target_network = deepcopy(self.source_network)
+        self.total_n_steps = 0
+        self.G = 0
+        self.last_loss_episode = 0
+        self.loss = 0
+        self.is_demonstrating = True
+        self.demonstration = Demonstration()
+        if historic is None:
+            self.historic = ReplayBuffer(BUFFER_SIZE)
         else:
-            self.historic=historic
-        self.total_n_steps=0
-        self.nbTrajectories=2000
-        self.G=0
-        self.last_loss_episode=0
-        self.pretraining=500
-        self.episode=0
-        self.loss=0
-        self.demo=deep_q_learning.demo()
-        self.longueurDemo=59
+            self.historic = historic
 
     def add_entry_to_historic(self, previous_state, action, reward, next_state):
-        actionIndex=0
-        for k in range(len(self.actions)):
-            if action[0]==self.actions[k][0] and action[1]==self.actions[k][1]:
-                actionIndex=k
-            else:
-                pass
-        self.historic.store((previous_state, actionIndex, reward, next_state))
+        action_index = 0
+        for i in range(len(ACTIONS)):
+            if action[0] == ACTIONS[i][0] and action[1] == ACTIONS[i][1]:
+                action_index = i
+                break
+        self.historic.store((previous_state, action_index, reward, next_state), permanent=self.is_demonstrating)
 
     def choose_action(self):
-        if self.demo.compteur<self.demo.lenhistoric:
-            action = self.demo.demonstration()
-            return action[0], action[1]
-        elif self.historic.get_size() < self.pretraining:
-            if self.demo.compteur == self.demo.lenhistoric:
-                self.historic.permanent = self.historic
-            #On enregistre l'historique des actions de démonstrations dans un replay à part
+        action = self.demonstration.get_next_action()
+        if action is None:
+            self.is_demonstrating = False
+            action = ACTIONS[self.choose_action_NN()]
 
+        if self.historic.get_size() % 500 == 0:
+            with open('historique' + str(self.historic.get_size()) + '.csv', 'w+') as file:
+                writer = csv.writer(file)
+                batch = format_batch(self.historic.get_buffer(), self.target_network, GAMMA)
+                for row in range(len(batch)):
+                    writer.writerow(batch[row][:])
 
-            #ici ça pourrait être une autre méthode pour populer l'historique
-            direction = -1
-            if self.historic.get_size() >= 5 and self.actions[self.historic.get_n_element(-1)[1]][0] != 0:
-                direction = self.actions[self.historic.get_n_element(-1)[1]][0] * -1
-                for i in range(5):
-                    if self.actions[self.historic.get_n_element(-1)[1]][0] != self.actions[self.historic.get_n_element(self.historic.get_size()-1-i)[1]][0]:
-                        direction = self.actions[self.historic.get_n_element(-1)[1]][0]
-                        break
-
-            jump = True
-            if self.historic.get_size() >= 4:
-                jump = not self.actions[self.historic.get_n_element(-1)[1]][1]
-                for i in range(4):
-                    if self.actions[self.historic.get_n_element(-1)[1]][1] != self.actions[self.historic.get_n_element(self.historic.get_size()-1-i)[1]][1]:
-                        jump = self.actions[self.historic.get_n_element(-1)[1]][1]
-                        break
-        else:
-            if self.historic.get_size()==self.pretraining:
-                print("--->Début du NN<----")
-            direction=self.actions[self.choose_action_NN()][0]
-            jump=self.actions[self.choose_action_NN()][1]
-
-        if self.historic.get_size()%500==0:
-            A=deep_q_learning.format_batch(self.historic.matriceIterable(),self.target_network,self.gamma)
-
-            f = open('historique'+str(self.historic.get_size())+'.csv', 'w',newline='')
-            writer=csv.writer(f)
-            for row in range(len(A)):
-                writer.writerow(A[row][:])
-
-        return direction, jump
+        return action
 
     def choose_action_NN(self):
-        next_state = self.historic.get_n_element(-1)[3]
-        state=self.historic.get_n_element(-1)[0]
-        action=self.historic.get_n_element(-1)[1]
-        reward=self.historic.get_n_element(-1)[2]
+        next_state = self.historic[-1][3]
+        state = self.historic[-1][0]
+        action = self.historic[-1][1]
+        reward = self.historic[-1][2]
         self.G += reward
 
         self.historic.store((state, action, reward, next_state))
         self.total_n_steps += 1
 
-        if self.historic.get_size() > self.batchSize and self.total_n_steps % self.trainingInterval == 0:
-            #minibatch sans démonstration
-            #minibatch = self.historic.get_batch(self.batchSize)
-            minibatch = self.historic.batchReplayAvecPermanent(self.batchSize)
-            formatted_minibatch = deep_q_learning.format_batch(minibatch, self.target_network, self.gamma)
-            input=torch.FloatTensor(formatted_minibatch[0])
-            output=torch.FloatTensor(formatted_minibatch[1])
-            self.last_loss_episode = self.source_network.train_on_batch(input,output)
-            self.target_network.soft_update(self.source_network, self.tau)
+        if self.historic.get_size() > BATCH_SIZE and self.total_n_steps % TRAINING_INTERVAL == 0:
+            minibatch = self.historic.get_batch(BATCH_SIZE)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA)
+            self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
+            self.target_network.soft_update(self.source_network, TAU)
 
-        state = next_state
-
-        if self.total_n_steps==1:
+        if self.total_n_steps == 1:
             with open("dql.csv", "w+", newline="") as file:
                 file.write("total_nb_steps,cumulative_reward,loss\n")
-                file.write(str(self.total_n_steps)+","+str(self.G)+","+str(self.last_loss_episode)+"\n")
-                print("Après "+str(self.total_n_steps)+" actions: reward "+","+str(self.G)+", dernier loss: "+str(self.last_loss_episode)+"\n")
+                file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
+                print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
         else:
             with open("dql.csv", "a", newline="") as file:
                 file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
                 print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(
                     self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
-            #state, _ = environment.reset(seed=seed)
-            state = deep_q_learning.state_format(self.historic.get_n_element(-1)[-1])
+
+            state = format_state(self.historic[-1][-1])
             action = self.source_network.get_action(state, self.epsilon)
             self.epsilon = max(self.epsilon * 0.9999, 0.05)
-            # condition d'arrêt pour trajectory_done
+
         return action

@@ -4,6 +4,7 @@ from agent import Agent
 
 agent = Agent()
 steps_since_reset = 0
+episode = 0
 
 
 def parse_lines(lines_str):
@@ -151,7 +152,6 @@ async def on_receive(websocket):
         agent.add_entry_to_historic(*historic_entry)
 
         global steps_since_reset
-        response = ""
         if steps_since_reset < 300:
             steps_since_reset += 1
             action = agent.choose_action()
@@ -159,17 +159,18 @@ async def on_receive(websocket):
         else:
             steps_since_reset = 0
             response = "RST"
-            agent.episode+=1
+            global episode
+            episode += 1
 
-            if agent.episode==1:
+            if episode == 1:
                 with open("dql_episode.csv", "w+", newline="") as file:
                     file.write("Episode,cumulative_reward,loss\n")
-                    file.write(str(agent.episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
-                    print(agent.episode, agent.G, agent.last_loss_episode)
+                    file.write(str(episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
+                    print(episode, agent.G, agent.last_loss_episode)
             else:
                 with open("dql_episode.csv", "a", newline="") as file:
-                    file.write(str(agent.episode)+","+str(agent.G)+","+str(agent.last_loss_episode)+"\n")
-                    print(agent.episode, agent.G, agent.last_loss_episode)
+                    file.write(str(episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
+                    print(episode, agent.G, agent.last_loss_episode)
             agent.G = 0
         await websocket.send(response)
 
@@ -177,5 +178,6 @@ async def on_receive(websocket):
 async def main():
     async with websockets.serve(on_receive, "localhost", 65432):
         await asyncio.Future()
+
 
 asyncio.run(main())
