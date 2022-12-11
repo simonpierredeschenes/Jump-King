@@ -6,7 +6,8 @@
 #   The second element is the x position of the player in the screen (0 is at the left)
 #   The third element is the y position of the player in the screen (0 is at the top)
 #   The fourth element is true if the player is touching the ground, false otherwise
-#   The fifth element is a vector containing all the solid edges in the screen under the form (x1, y1, x2, y2)
+#   The fifth element is a counter of since how many time steps is the jump button held
+#   The sixth element is a vector containing all the solid edges in the screen under the form (x1, y1, x2, y2)
 #
 # An action is a vector of size 2
 #   The first element is either -1 to move left, 0 for no lateral movement or 1 to move right
@@ -38,7 +39,7 @@ LEARNING_RATE = 5e-4
 class Agent:
     def __init__(self, historic=None):
         self.epsilon = 1
-        self.model = NNModel(204, 6, 6, 2040)
+        self.model = NNModel(205, 6, 6, 2050)
         self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE), loss_function=dqn_loss)
         self.target_network = deepcopy(self.source_network)
         self.total_nb_steps = 0
