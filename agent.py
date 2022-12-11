@@ -41,7 +41,7 @@ class Agent:
         self.model = NNModel(204, 6, 6, 2040)
         self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE), loss_function=dqn_loss)
         self.target_network = deepcopy(self.source_network)
-        self.total_n_steps = 0
+        self.total_nb_steps = 0
         self.G = 0
         self.last_loss_episode = 0
         self.loss = 0
@@ -78,27 +78,16 @@ class Agent:
     def choose_action_NN(self):
         state = self.historic[-1][-1]
         self.G += self.historic[-1][2]
-        self.total_n_steps += 1
+        self.total_nb_steps += 1
 
         formatted_state = format_state(state)
         action = self.source_network.get_action(formatted_state, self.epsilon)
         self.epsilon = max(self.epsilon * 0.9999, 0.05)
 
-        if self.historic.get_size() > BATCH_SIZE and self.total_n_steps % TRAINING_INTERVAL == 0:
+        if self.historic.get_size() > BATCH_SIZE and self.total_nb_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
             formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA)
             self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
-
-        if self.total_n_steps == 1:
-            with open("dql.csv", "w+", newline="") as file:
-                file.write("total_nb_steps,cumulative_reward,loss\n")
-                file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
-                print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
-        else:
-            with open("dql.csv", "a", newline="") as file:
-                file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
-                print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(
-                    self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
 
         return action
