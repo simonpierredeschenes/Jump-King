@@ -3,7 +3,7 @@ import random
 
 
 class ReplayBuffer:
-    def __init__(self, buffer_size,epsilon_P=0.4):
+    def __init__(self, buffer_size,epsilon_P=0.5):
         self.__buffer_size = buffer_size
         self.__permanent_buffer = deque()
         self.__volatile_buffer = deque()
