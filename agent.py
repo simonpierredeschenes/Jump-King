@@ -66,13 +66,6 @@ class Agent:
             self.is_demonstrating = False
             action = ACTIONS[self.choose_action_NN()]
 
-        if self.historic.get_size() % 500 == 0:
-            with open('historique' + str(self.historic.get_size()) + '.csv', 'w+') as file:
-                writer = csv.writer(file)
-                batch = format_batch(self.historic.get_buffer(), self.target_network, GAMMA)
-                for row in range(len(batch)):
-                    writer.writerow(batch[row][:])
-
         return action
 
     def choose_action_NN(self):

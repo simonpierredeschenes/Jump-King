@@ -29,7 +29,7 @@ class ReplayBuffer:
         return self.__permanent_buffer + self.__volatile_buffer
 
     def get_size(self):
-        return min(len(self.__permanent_buffer),len(self.__volatile_buffer))
+        return len(self.__volatile_buffer)
 
     def __getitem__(self, index):
         return (self.__permanent_buffer + self.__volatile_buffer)[index]
