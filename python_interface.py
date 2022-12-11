@@ -61,7 +61,12 @@ def parse_state(state_str):
     is_on_ground_str = state_str[is_on_ground_start_index:is_on_ground_end_index]
     is_on_ground = is_on_ground_str == "true"
 
-    lines_start_index = is_on_ground_end_index + 1
+    jump_counter_start_index = is_on_ground_end_index + 1
+    jump_counter_end_index = state_str.find(",", jump_counter_start_index)
+    jump_counter_str = state_str[jump_counter_start_index:jump_counter_end_index]
+    jump_counter = int(jump_counter_str)
+
+    lines_start_index = jump_counter_end_index + 1
     current_index = lines_start_index + 1
     nb_open_brackets = 1
     while current_index < len(state_str) and nb_open_brackets > 0:
@@ -74,7 +79,7 @@ def parse_state(state_str):
     lines_str = state_str[lines_start_index:lines_end_index]
     lines = parse_lines(lines_str)
 
-    return global_height, player_x, player_y, is_on_ground, lines
+    return global_height, player_x, player_y, is_on_ground, jump_counter, lines
 
 
 def parse_action(action_str):

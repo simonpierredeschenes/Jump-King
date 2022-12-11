@@ -51,16 +51,17 @@ def format_batch(batch, target_network, gamma):
     state_x = np.vstack([x[0][1] for x in batch])
     state_y = np.vstack([x[0][2] for x in batch])
     jumping = np.vstack([x[0][3] for x in batch])
+    jump_counter = np.vstack([x[0][4] for x in batch])
     edges = []
     i = 0
     for x in batch: # format_state?
         j = 0
         edges.append(np.zeros(200))
-        for y in range(len(x[0][4])):
-            edges[i][j] = x[0][4][y][0]
-            edges[i][j + 1] = x[0][4][y][1]
-            edges[i][j + 2] = x[0][4][y][2]
-            edges[i][j + 3] = x[0][4][y][3]
+        for y in range(len(x[0][5])):
+            edges[i][j] = x[0][5][y][0]
+            edges[i][j + 1] = x[0][5][y][1]
+            edges[i][j + 2] = x[0][5][y][2]
+            edges[i][j + 3] = x[0][5][y][3]
             j += 4
         i += 1
     edges = np.vstack(edges)
@@ -71,21 +72,22 @@ def format_batch(batch, target_network, gamma):
     next_state_y = np.vstack([x[3][2] for x in batch])
 
     next_jumping = np.vstack([x[3][3] for x in batch])
+    next_jump_counter = np.vstack([x[3][4] for x in batch])
     next_edges = []
     i = 0
     for x in batch: # format_state?
         j = 0
         next_edges.append(np.zeros(200))
-        for y in range(len(x[3][4])):
-            next_edges[i][j] = x[3][4][y][0]
-            next_edges[i][j + 1] = x[3][4][y][1]
-            next_edges[i][j + 2] = x[3][4][y][2]
-            next_edges[i][j + 3] = x[3][4][y][3]
+        for y in range(len(x[3][5])):
+            next_edges[i][j] = x[3][5][y][0]
+            next_edges[i][j + 1] = x[3][5][y][1]
+            next_edges[i][j + 2] = x[3][5][y][2]
+            next_edges[i][j + 3] = x[3][5][y][3]
             j += 4
         i += 1
     next_edges = np.vstack(next_edges)
-    states = np.concatenate((state_height, state_x, state_y, jumping, edges), axis=1).astype(np.float32)
-    next_states = np.concatenate((next_state_height, next_state_x, next_state_y, next_jumping, next_edges), axis=1).astype(np.float32)
+    states = np.concatenate((state_height, state_x, state_y, jumping, jump_counter, edges), axis=1).astype(np.float32)
+    next_states = np.concatenate((next_state_height, next_state_x, next_state_y, next_jumping, next_jump_counter, next_edges), axis=1).astype(np.float32)
     next_q_vals = target_network.predict_on_batch(next_states)
     max_q_vals = np.max(next_q_vals, axis=-1)
     targets = (rewards + gamma * max_q_vals).astype(np.float32)
@@ -97,13 +99,14 @@ def format_state(state):
     state_x = state[1]
     state_y = state[2]
     jumping = state[3]
+    jump_counter = state[4]
     edges = np.zeros(200)
-    for i in range(min(len(state[4]), 50)):
-        edges[4 * i] = state[4][i][0]
-        edges[4 * i + 1] = state[4][i][1]
-        edges[4 * i + 2] = state[4][i][2]
-        edges[4 * i + 3] = state[4][i][3]
-    return np.concatenate(([state_height, state_x, state_y, jumping], edges), axis=0).astype(np.float32)
+    for i in range(min(len(state[5]), 50)):
+        edges[4 * i] = state[5][i][0]
+        edges[4 * i + 1] = state[5][i][1]
+        edges[4 * i + 2] = state[5][i][2]
+        edges[4 * i + 3] = state[5][i][3]
+    return np.concatenate(([state_height, state_x, state_y, jumping, jump_counter], edges), axis=0).astype(np.float32)
 
 
 def dqn_loss(y_pred, y_target):
