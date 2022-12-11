@@ -76,14 +76,13 @@ class Agent:
         return action
 
     def choose_action_NN(self):
-        next_state = self.historic[-1][3]
-        state = self.historic[-1][0]
-        action = self.historic[-1][1]
-        reward = self.historic[-1][2]
-        self.G += reward
-
-        self.historic.store((state, action, reward, next_state))
+        state = self.historic[-1][-1]
+        self.G += self.historic[-1][2]
         self.total_n_steps += 1
+
+        formatted_state = format_state(state)
+        action = self.source_network.get_action(formatted_state, self.epsilon)
+        self.epsilon = max(self.epsilon * 0.9999, 0.05)
 
         if self.historic.get_size() > BATCH_SIZE and self.total_n_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
@@ -101,9 +100,5 @@ class Agent:
                 file.write(str(self.total_n_steps) + "," + str(self.G) + "," + str(self.last_loss_episode) + "\n")
                 print("Après " + str(self.total_n_steps) + " actions: reward " + "," + str(
                     self.G) + ", dernier loss: " + str(self.last_loss_episode) + "\n")
-
-            state = format_state(self.historic[-1][-1])
-            action = self.source_network.get_action(state, self.epsilon)
-            self.epsilon = max(self.epsilon * 0.9999, 0.05)
 
         return action
