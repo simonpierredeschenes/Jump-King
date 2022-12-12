@@ -5,7 +5,8 @@ from agent import Agent
 agent = Agent()
 steps_since_reset = 0
 episode = 0
-
+global epsilon
+epsilon=0.95
 
 def parse_lines(lines_str):
     lines = []
@@ -177,6 +178,8 @@ async def on_receive(websocket):
                     file.write(str(episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
                     print(episode, agent.G, agent.last_loss_episode)
             agent.G = 0
+            # #On reset le epsion
+            # agent.epsilon=epsilon**(episode)
         await websocket.send(response)
 
 

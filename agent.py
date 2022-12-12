@@ -31,7 +31,7 @@ ACTIONS = np.array([[-1, 1], [1, 1], [-1, 0], [1, 0], [0, 1], [0, 0]])
 BATCH_SIZE = 200
 GAMMA = 0.99
 BUFFER_SIZE = 10000
-TAU = 1e-3
+TAU = 5e-3
 TRAINING_INTERVAL = 20
 LEARNING_RATE = 5e-4
 
@@ -76,7 +76,7 @@ class Agent:
 
         formatted_state = format_state(state)
         action = self.source_network.get_action(formatted_state, self.epsilon)
-        self.epsilon = max(self.epsilon * 0.9999, 0.05)
+        self.epsilon = max(self.epsilon * 0.99, 0.05)
 
         if self.historic.get_size() > BATCH_SIZE and self.total_nb_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
