@@ -437,15 +437,16 @@ function stateToString(state)
     stateString += state[1].toString() + ",";
     stateString += state[2].toString() + ",";
     stateString += state[3].toString() + ",";
+    stateString += state[4].toString() + ",";
     stateString += "[";
-    for(let i = 0; i < state[4].length; i++)
+    for(let i = 0; i < state[5].length; i++)
     {
         stateString += "[";
-        stateString += state[4][i].x1 + ",";
-        stateString += state[4][i].y1 + ",";
-        stateString += state[4][i].x2 + ",";
-        stateString += state[4][i].y2 + "]";
-        if(i < state[4].length - 1)
+        stateString += state[5][i].x1 + ",";
+        stateString += state[5][i].y1 + ",";
+        stateString += state[5][i].x2 + ",";
+        stateString += state[5][i].y2 + "]";
+        if(i < state[5].length - 1)
         {
             stateString += ",";
         }
@@ -477,7 +478,7 @@ function addCurrentStateToHistoric()
 {
     if(agentReady && !waitingOnAction && (previousState == null || gameUpdateCounter == NB_FRAMES_BETWEEN_AGENT_CALLS))
     {
-        currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, levels[player.currentLevelNo].lines];
+        currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, jumpCounter, levels[player.currentLevelNo].lines];
         if(previousState != null) {
             reward = currentState[0] - previousState[0];
             socket.send(historicEntryToString(previousState, previousAction, reward, currentState));
@@ -490,18 +491,25 @@ function addCurrentStateToHistoric()
 
 let sequenceNumberOfLastExecution = 0;
 let previousAction = [0, false];
+let jumpCounter = 0;
 function executeCurrentAction()
 {
     if(agentReady && sequenceNumberOfLastExecution != currentSequenceNumber && currentAction != null)
     {
         player.leftHeld = currentAction[0] == -1;
         player.rightHeld = currentAction[0] == 1;
-        if (player.jumpHeld && !currentAction[1]) {
-            if (!creatingLines) {
-                player.Jump()
+        if (currentAction[1]) {
+            jumpCounter += 1;
+            player.jumpHeld = true;
+        } else {
+            if (player.jumpHeld) {
+                if (!creatingLines) {
+                    player.Jump()
+                }
             }
+            jumpCounter = 0;
+            player.jumpHeld = false;
         }
-        player.jumpHeld = currentAction[1];
         previousAction = currentAction;
         sequenceNumberOfLastExecution = currentSequenceNumber;
         waitingOnAction = false;
