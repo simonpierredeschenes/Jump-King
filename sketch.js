@@ -480,7 +480,7 @@ function addCurrentStateToHistoric()
     {
         currentState = [player.GetGlobalHeight(), player.currentPos.x, player.currentPos.y, player.isOnGround, jumpCounter, levels[player.currentLevelNo].lines];
         if(previousState != null) {
-            reward = currentState[0] - previousState[0];
+            reward = (currentState[0] - previousState[0]) - 0.5;
             socket.send(historicEntryToString(previousState, previousAction, reward, currentState));
             waitingOnAction = true;
             player.isGameStopped = true;
