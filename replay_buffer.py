@@ -1,6 +1,6 @@
 from collections import deque
 import random
-
+import numpy as np
 
 class ReplayBuffer:
     def __init__(self, buffer_size,epsilon_P=0.5):
@@ -31,5 +31,18 @@ class ReplayBuffer:
     def get_size(self):
         return len(self.__volatile_buffer)
 
+    def get_size_permanent(self):
+        return len(self.__permanent_buffer)
+
+    def get_permanent_buffer(self):
+        return self.__permanent_buffer
+
     def __getitem__(self, index):
         return (self.__permanent_buffer + self.__volatile_buffer)[index]
+
+    def closest_distance_state_and_historic(self, state):
+        list_historic = []
+        for x in self.__permanent_buffer:
+            list_historic.append(np.sqrt(((x[0][0] - state[0]) ** 2) + ((x[0][1] - state[1]) ** 2)))
+        index = np.argmin(list_historic)
+        return self.__permanent_buffer[index]

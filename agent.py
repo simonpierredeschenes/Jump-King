@@ -80,7 +80,7 @@ class Agent:
 
         if self.historic.get_size() > BATCH_SIZE and self.total_nb_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
-            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA,self.historic)
             self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
 
