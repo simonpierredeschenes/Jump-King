@@ -121,7 +121,7 @@ def dqn_loss(y_pred, y_target):
             L.append(50)
     #fun = lambda x: Q_target+L
     #Q_E= scipy.optimize.minimize(fun, x0, method='SLSQP')
-
+    #On doit utiliser y_pred pour les Q-Values des actions
     #print(y_pred)
 
     return torch.nn.functional.mse_loss(Q_predict, Q_target)
