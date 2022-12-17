@@ -110,6 +110,12 @@ def format_state(state):
     return np.concatenate(([state_height, state_x, state_y, jumping, jump_counter], edges), axis=0).astype(np.float32)
 
 
+# def dqn_loss(y_pred, y_target):
+#     actions, Q_target,states,historic = y_target
+#     Q_predict = y_pred.gather(1, actions.unsqueeze(-1).to(torch.int64)).squeeze()
+#
+#     return torch.nn.functional.mse_loss(Q_predict, Q_target)
+
 def dqn_loss(y_pred, y_target):
     actions, Q_target,states,historic = y_target
     Q_predict = y_pred.gather(1, actions.unsqueeze(-1).to(torch.int64)).squeeze()
@@ -117,12 +123,20 @@ def dqn_loss(y_pred, y_target):
 
     L=[]
     for i in range(0,len(Q_target),1):
-        if (closest_distance_state_and_historic(historic,states[i])[1])==int(actions[i].item()):
-            L.append(50)
-    #fun = lambda x: Q_target+L
-    #Q_E= scipy.optimize.minimize(fun, x0, method='SLSQP')
-    #On doit utiliser y_pred pour les Q-Values des actions
-    #print(y_pred)
+        temp=[]
+        for j in range(0,len(y_pred[0]),1):
+            if int((closest_distance_state_and_historic(historic,states[i])[1]))!=j:
+                temp.append(50)
+            else:
+                temp.append(0)
+        L.append(temp)
+
+    Large_Margin=torch.tensor(L)
+    Q_avec_marge=Large_Margin+y_pred
+    Q_max=[]
+    for z in range(len(Q_avec_marge)):
+        Q_max.append(np.max(Q_avec_marge[z].detach().numpy()))
+    print(Q_max)
 
     return torch.nn.functional.mse_loss(Q_predict, Q_target)
 
