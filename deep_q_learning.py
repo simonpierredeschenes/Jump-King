@@ -47,7 +47,7 @@ class NNModel(torch.nn.Module):
         return self.fa(x)
 
 
-def format_batch(batch, target_network, gamma,historic):
+def format_batch(batch, target_network, gamma, historic):
     state_height = np.vstack([x[0][0] for x in batch])
     state_x = np.vstack([x[0][1] for x in batch])
     state_y = np.vstack([x[0][2] for x in batch])
@@ -55,7 +55,7 @@ def format_batch(batch, target_network, gamma,historic):
     jump_counter = np.vstack([x[0][4] for x in batch])
     edges = []
     i = 0
-    for x in batch: # format_state?
+    for x in batch:  # format_state?
         j = 0
         edges.append(np.zeros(200))
         for y in range(len(x[0][5])):
@@ -76,7 +76,7 @@ def format_batch(batch, target_network, gamma,historic):
     next_jump_counter = np.vstack([x[3][4] for x in batch])
     next_edges = []
     i = 0
-    for x in batch: # format_state?
+    for x in batch:  # format_state?
         j = 0
         next_edges.append(np.zeros(200))
         for y in range(len(x[3][5])):
@@ -92,7 +92,7 @@ def format_batch(batch, target_network, gamma,historic):
     next_q_vals = target_network.predict_on_batch(next_states)
     max_q_vals = np.max(next_q_vals, axis=-1)
     targets = (rewards + gamma * max_q_vals).astype(np.float32)
-    return states, (actions, targets,states,historic)
+    return states, (actions, targets, states, historic)
 
 
 def format_state(state):
@@ -117,7 +117,7 @@ def format_state(state):
 #     return torch.nn.functional.mse_loss(Q_predict, Q_target)
 
 def dqn_loss(y_pred, y_target):
-    actions, Q_target,states,historic = y_target
+    actions, Q_target, states, historic = y_target
     Q_predict = y_pred.gather(1, actions.unsqueeze(-1).to(torch.int64)).squeeze()
     ###Section pour le Large-Margin Approach###
 
@@ -136,13 +136,14 @@ def dqn_loss(y_pred, y_target):
     Q_max=[]
     for z in range(len(Q_avec_marge)):
         Q_max.append(np.max(Q_avec_marge[z].detach().numpy()))
-    print(Q_max)
 
     return torch.nn.functional.mse_loss(Q_predict, Q_target)
 
-def closest_distance_state_and_historic(historic,state):
-    list_historic=[]
-    for x in range(0,historic.get_size_permanent(),1):
-        list_historic.append(np.sqrt(((historic.get_permanent_buffer()[x][0][0]-state[0].item())**2)+((historic.get_permanent_buffer()[x][0][1]-state[1].item())**2)))
-    index=np.argmin(list_historic)
+
+def closest_distance_state_and_historic(historic, state):
+    list_historic = []
+    for x in range(0, historic.get_size_permanent(), 1):
+        list_historic.append(
+            np.sqrt(((historic.get_permanent_buffer()[x][0][0] - state[0].item()) ** 2) + ((historic.get_permanent_buffer()[x][0][1] - state[1].item()) ** 2)))
+    index = np.argmin(list_historic)
     return historic.get_permanent_buffer()[index]
