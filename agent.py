@@ -28,6 +28,7 @@ from demonstration import Demonstration
 import torch
 
 ACTIONS = np.array([[-1, 1], [1, 1], [-1, 0], [1, 0], [0, 1], [0, 0]])
+NB_PRE_TRAINING_UPDATES = 200
 BATCH_SIZE = 200
 GAMMA = 0.99
 BUFFER_SIZE = 10000
@@ -62,12 +63,25 @@ class Agent:
         self.historic.store((previous_state, action_index, reward, next_state), permanent=self.is_demonstrating)
 
     def choose_action(self):
-        action = self.demonstration.get_next_action()
-        if action is None:
-            self.is_demonstrating = False
+        if self.is_demonstrating:
+            action = self.demonstration.get_next_action()
+            if action is None:
+                self.is_demonstrating = False
+                self.pre_train_network()
+                action = ACTIONS[self.choose_action_NN()]
+        else:
             action = ACTIONS[self.choose_action_NN()]
 
         return action
+
+    def pre_train_network(self):
+        for i in range(NB_PRE_TRAINING_UPDATES):
+            minibatch = self.historic.get_batch(BATCH_SIZE, epsilon_priorization=1)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic)
+            self.source_network.train_on_batch(*formatted_minibatch)
+            self.target_network.soft_update(self.source_network, TAU)
+            if (i+1) % (NB_PRE_TRAINING_UPDATES // 10) == 0:
+                print(f"Pre-training {100 * (i+1) / NB_PRE_TRAINING_UPDATES:.1f}% completed")
 
     def choose_action_NN(self):
         state = self.historic[-1][-1]
@@ -80,7 +94,7 @@ class Agent:
 
         if self.historic.get_size() > BATCH_SIZE and self.total_nb_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
-            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA,self.historic)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic)
             self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
 
