@@ -27,6 +27,7 @@ chrome_shutdown_ms.txt
 hyphen-data/
 persisted_first_party_sets.json
 pnacl/
+BrowserMetrics/
 BrowserMetrics-spare.pma
 Safe Browsing/
 SingletonCookie
