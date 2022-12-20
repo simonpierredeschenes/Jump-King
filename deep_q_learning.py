@@ -47,7 +47,7 @@ class NNModel(torch.nn.Module):
         return self.fa(x)
 
 
-def format_batch(batch, target_network, gamma, historic):
+def format_batch(batch, target_network, gamma, historic,lambdas):
     state_height = np.vstack([x[0][0] for x in batch])
     state_x = np.vstack([x[0][1] for x in batch])
     state_y = np.vstack([x[0][2] for x in batch])
@@ -98,7 +98,7 @@ def format_batch(batch, target_network, gamma, historic):
         state_permanent_buffer=format_state(permanent_buffer[i][0])
         Q_actuel=target_network.predict_on_batch(state_permanent_buffer)
         Q_permanent.append(Q_actuel[permanent_buffer[i][1]])
-    return states, (actions, targets, states, historic,Q_permanent)
+    return states, (actions, targets, states, historic,Q_permanent,lambdas)
 
 
 def format_state(state):
@@ -123,7 +123,7 @@ def format_state(state):
 #     return torch.nn.functional.mse_loss(Q_predict, Q_target)
 
 def dqn_loss(y_pred, y_target):
-    actions, Q_target, states, historic,Q_permanent = y_target
+    actions, Q_target, states, historic,Q_permanent, lambdas = y_target
     Q_predict = y_pred.gather(1, actions.unsqueeze(-1).to(torch.int64)).squeeze()
     ###Section pour le Large-Margin Approach###
 
@@ -147,7 +147,7 @@ def dqn_loss(y_pred, y_target):
         Q_max.append(np.max(Q_avec_marge[z].detach().numpy())-Q_permanent[index_Permanent[z]])
     Q_max=torch.tensor(np.mean(np.array(Q_max)))
     mse_loss=torch.nn.functional.mse_loss(Q_predict, Q_target)
-    loss_network = Q_max + mse_loss
+    loss_network = lambdas[0]*Q_max + lambdas[1]*mse_loss
 
     return loss_network
 

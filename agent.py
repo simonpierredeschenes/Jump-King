@@ -34,13 +34,18 @@ GAMMA = 0.99
 BUFFER_SIZE = 10000
 TAU = 5e-3
 TRAINING_INTERVAL = 20
-LEARNING_RATE = 5e-4
+LEARNING_RATE = 5e-5
 WEIGHT_DECAY=0.01
+NBRE_COUCHE_NN=6
+NB_NEURONES_NN=2050
+EPSILON=0.99
+LAMBDA_1=0.7
+LAMBDA_2=0.5
 
 class Agent:
     def __init__(self, historic=None):
         self.epsilon = 1
-        self.model = NNModel(205, 6, 6, 2050)
+        self.model = NNModel(205, 6, NBRE_COUCHE_NN, NB_NEURONES_NN)
         self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE,weight_decay=WEIGHT_DECAY), loss_function=dqn_loss)
         self.target_network = deepcopy(self.source_network)
         self.total_nb_steps = 0
@@ -77,7 +82,7 @@ class Agent:
     def pre_train_network(self):
         for i in range(NB_PRE_TRAINING_UPDATES):
             minibatch = self.historic.get_batch(BATCH_SIZE, epsilon_priorization=1)
-            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic,[LAMBDA_1,LAMBDA_2])
             self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
             if (i+1) % (NB_PRE_TRAINING_UPDATES // 10) == 0:
@@ -90,11 +95,11 @@ class Agent:
 
         formatted_state = format_state(state)
         action = self.source_network.get_action(formatted_state, self.epsilon)
-        self.epsilon = max(self.epsilon * 0.99, 0.05)
+        self.epsilon = max(self.epsilon * EPSILON, 0.05)
 
         if self.historic.get_size() > BATCH_SIZE and self.total_nb_steps % TRAINING_INTERVAL == 0:
             minibatch = self.historic.get_batch(BATCH_SIZE)
-            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic)
+            formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic,[LAMBDA_1,LAMBDA_2])
             self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
 
