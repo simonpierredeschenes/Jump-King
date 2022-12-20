@@ -35,13 +35,13 @@ BUFFER_SIZE = 10000
 TAU = 5e-3
 TRAINING_INTERVAL = 20
 LEARNING_RATE = 5e-4
-
+WEIGHT_DECAY=0.01
 
 class Agent:
     def __init__(self, historic=None):
         self.epsilon = 1
         self.model = NNModel(205, 6, 6, 2050)
-        self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE), loss_function=dqn_loss)
+        self.source_network = DQN(ACTIONS.shape[0], self.model, torch.optim.Adam(self.model.parameters(), lr=LEARNING_RATE,weight_decay=WEIGHT_DECAY), loss_function=dqn_loss)
         self.target_network = deepcopy(self.source_network)
         self.total_nb_steps = 0
         self.G = 0
