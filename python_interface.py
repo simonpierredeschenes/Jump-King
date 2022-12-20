@@ -172,11 +172,11 @@ async def on_receive(websocket):
                 with open("dql_episode.csv", "w+", newline="") as file:
                     file.write("Episode,cumulative_reward,loss\n")
                     file.write(str(episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
-                    print(episode, agent.G, agent.last_loss_episode)
+                    print(episode, agent.G, agent.last_loss_episode, agent.epsilon)
             else:
                 with open("dql_episode.csv", "a", newline="") as file:
                     file.write(str(episode) + "," + str(agent.G) + "," + str(agent.last_loss_episode) + "\n")
-                    print(episode, agent.G, agent.last_loss_episode)
+                    print(episode, agent.G, agent.last_loss_episode, agent.epsilon)
             agent.G = 0
             # #On reset le epsion
             # agent.epsilon=epsilon**(episode)
