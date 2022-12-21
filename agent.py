@@ -19,7 +19,6 @@
 #   The third element is the reward received after the previous action
 #   The fourth element is the next state
 
-import csv
 import numpy as np
 from copy import deepcopy
 from deep_q_learning import DQN, NNModel, format_batch, format_state, dqn_loss
@@ -102,5 +101,8 @@ class Agent:
             formatted_minibatch = format_batch(minibatch, self.target_network, GAMMA, self.historic,[LAMBDA_1,LAMBDA_2])
             self.last_loss_episode = self.source_network.train_on_batch(*formatted_minibatch)
             self.target_network.soft_update(self.source_network, TAU)
+            if self.total_nb_steps % 600 == 0:
+                self.source_network.save_weights("source_weights.pth")
+                self.target_network.save_weights("target_weights.pth")
 
         return action

@@ -36,4 +36,5 @@ SingletonSocket
 __pycache__/
 venv/
 *.csv
+*.pth
 
